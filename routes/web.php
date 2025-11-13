@@ -31,6 +31,7 @@ Route::middleware(['auth.simple'])->group(function () {
         Route::resource('suppliers', SupplierController::class);
         Route::post('/users/{user}/archive', [UserController::class, 'archive'])->name('users.archive');
         Route::post('/users/{user}/restore', [UserController::class, 'restore'])->name('users.restore');
+        Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
     });
 
     // Both admin and employee can access these

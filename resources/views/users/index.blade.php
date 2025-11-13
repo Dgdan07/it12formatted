@@ -69,7 +69,6 @@
                         <th>Email</th>
                         <th>Contact No.</th>
                         <th>Role</th>
-                        <th>Status</th>
                         <th>Last Updated</th>
                         <th>Actions</th>
                     </tr>
@@ -80,24 +79,11 @@
                         <td>{{ $user->id }}</td>
                         <td>
                             <strong>{{ $user->username }}</strong>
-                            @if(!$user->is_active)
-                                <span class="badge bg-warning ms-1">Archived</span>
-                            @endif
                         </td>
                         <td>{{ $user->full_name }}</td>
                         <td>{{ $user->email }}</td>
                         <td>{{ $user->contactNo ?? 'N/A' }}</td>
                         <td class="primary">{{ $user->role->name }}</td>
-                        <td>
-                            @if($user->is_active)
-                                <span class="badge bg-success">Active</span>
-                            @else
-                                <span class="badge bg-warning">Archived</span>
-                                @if($user->date_disabled)
-                                    <br><small class="text-muted">{{ $user->date_disabled->format('M j, Y') }}</small>
-                                @endif
-                            @endif
-                        </td>
                         <td>{{ $user->updated_at->format('Y-m-d') }}</td>
                         <td>
                             <button class="btn btn-sm btn-outline-info btn-action view-user" data-id="{{ $user->id }}" title="View Details">
@@ -314,7 +300,7 @@
                     </div>
                     <div class="list-group-item d-flex justify-content-between px-0">
                         <small class="text-muted">Status:</small>
-                        <span class="badge" id="viewStatusBadge"></span>
+                        <span class="fw-semibold" id="viewStatusText"></span>
                     </div>
                     <div class="list-group-item d-flex justify-content-between px-0">
                         <small class="text-muted">Created:</small>
@@ -337,20 +323,13 @@
                         <small>By:</small>
                         <small class="fw-semibold" id="viewDisabledBy"></small>
                     </div>
-                </div>
-
-                <!-- Password -->
-                <div class="mt-3">
-                    <small class="text-muted">Password</small>
-                    <div class="input-group input-group-sm mt-1">
-                        <input type="password" class="form-control" id="viewPassword" readonly value="••••••••">
-                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    </div>
-                </div>
+                </div>               
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-outline-warning btn-sm" id="resetPasswordBtn">
+                    <i class="bi bi-key me-1"></i>
+                    Reset Password
+                </button>
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -363,7 +342,6 @@
             <div class="modal-content">
                 <form id="archiveUserForm" method="POST">
                     @csrf
-                    @method('DELETE')
                     <div class="modal-header">
                         <h5 class="modal-title" id="archiveUserModalLabel">
                             <i class="bi bi-exclamation-triangle me-2 text-warning"></i>
@@ -424,8 +402,54 @@
         </div>
     </div>
 
+    <!-- Reset Password Modal -->
+    <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="resetPasswordForm" method="POST">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="resetPasswordModalLabel">
+                            <i class="bi bi-key me-2"></i>
+                            Reset Password
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center mb-3">
+                            <i class="bi bi-key text-warning" style="font-size: 2rem;"></i>
+                            <p class="mt-2 mb-0">Reset password for: <strong id="resetPasswordUserName"></strong></p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">New Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="newPassword" name="password" placeholder="Enter new password" required>
+                            <div class="form-text">Minimum 8 characters</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPasswordConfirmation" class="form-label">Confirm New Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="newPasswordConfirmation" name="password_confirmation" placeholder="Confirm new password" required>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            The user will need to use this new password to log in.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning">Reset Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
     <script>
+        // Global variable to store current user ID
+        let currentViewUserId = null;
+    
         // Edit User
         document.querySelectorAll('.edit-user').forEach(button => {
             button.addEventListener('click', function() {
@@ -454,10 +478,11 @@
         document.querySelectorAll('.view-user').forEach(button => {
             button.addEventListener('click', function() {
                 const userId = this.getAttribute('data-id');
+                currentViewUserId = userId; 
                 
                 fetch(`/users/${userId}`)
                     .then(response => response.json())
-                    .then(user => {
+                    .then(user => {                
                         document.getElementById('viewUsername').textContent = user.username;
                         document.getElementById('viewFullName').textContent = user.full_name;
                         document.getElementById('viewEmail').textContent = user.email;
@@ -466,22 +491,39 @@
                         document.getElementById('viewCreatedAt').textContent = new Date(user.created_at).toLocaleString();
                         document.getElementById('viewUpdatedAt').textContent = new Date(user.updated_at).toLocaleString();
                         
-                        // Status
-                        const statusBadge = document.getElementById('viewStatusBadge');
+                        const statusText = document.getElementById('viewStatusText');
                         if (user.is_active) {
-                            statusBadge.textContent = 'Active';
-                            statusBadge.className = 'badge bg-success';
+                            statusText.textContent = 'Active';
+                            statusText.className = 'fw-semibold'; 
                             document.getElementById('archiveInfo').style.display = 'none';
                         } else {
-                            statusBadge.textContent = 'Archived';
-                            statusBadge.className = 'badge bg-warning';
+                            statusText.textContent = 'Archived';
+                            statusText.className = 'fw-semibold';
                             document.getElementById('archiveInfo').style.display = 'block';
-                            document.getElementById('viewDateDisabled').textContent = user.date_disabled ? new Date(user.date_disabled).toLocaleString() : 'N/A';
-                            document.getElementById('viewDisabledBy').textContent = user.disabled_by ? user.disabled_by.full_name : 'N/A';
+                            
+                            // Date disabled
+                            if (user.date_disabled) {
+                                document.getElementById('viewDateDisabled').textContent = 
+                                    new Date(user.date_disabled).toLocaleString();
+                            } else {
+                                document.getElementById('viewDateDisabled').textContent = 'N/A';
+                            }
+                            
+                            // Disabled by
+                            if (user.disabled_by && user.disabled_by.full_name) {
+                                document.getElementById('viewDisabledBy').textContent = user.disabled_by.full_name;
+                            } else if (user.disabled_by_user_id) {
+                                document.getElementById('viewDisabledBy').textContent = 'User #' + user.disabled_by_user_id;
+                            } else {
+                                document.getElementById('viewDisabledBy').textContent = 'System';
+                            }
                         }
                         
                         const modal = new bootstrap.Modal(document.getElementById('viewUserModal'));
                         modal.show();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching user:', error);
                     });
             });
         });
@@ -513,43 +555,71 @@
                 modal.show();
             });
         });
-        
-        // Toggle password visibility in view modal
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const passwordField = document.getElementById('viewPassword');
-            const icon = this.querySelector('i');
-            
-            if (passwordField.type === 'password') {
-                passwordField.type = 'text';
-                icon.className = 'bi bi-eye-slash';
-                this.innerHTML = '<i class="bi bi-eye-slash"></i> Hide';
-            } else {
-                passwordField.type = 'password';
-                icon.className = 'bi bi-eye';
-                this.innerHTML = '<i class="bi bi-eye"></i> Show';
-            }
-        });
-        
-        // Role search functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const roleSelects = document.querySelectorAll('select[name="role_id"]');
-            roleSelects.forEach(select => {
-                const originalOptions = Array.from(select.options);
+    
+        // Reset Password Button - Check if element exists first
+        const resetPasswordBtn = document.getElementById('resetPasswordBtn');
+        if (resetPasswordBtn) {
+            resetPasswordBtn.addEventListener('click', function() {
+                if (!currentViewUserId) {
+                    alert('No user selected');
+                    return;
+                }
                 
-                select.addEventListener('input', function(e) {
-                    const searchTerm = e.target.value.toLowerCase();
-                    const filteredOptions = originalOptions.filter(option => 
-                        option.text.toLowerCase().includes(searchTerm)
-                    );
-                    
-                    // Clear and repopulate
-                    select.innerHTML = '';
-                    filteredOptions.forEach(option => {
-                        select.appendChild(option.cloneNode(true));
-                    });
+                // Get user name from the view modal for display
+                const userName = document.getElementById('viewFullName').textContent;
+                document.getElementById('resetPasswordUserName').textContent = userName;
+                
+                // Set the form action
+                document.getElementById('resetPasswordForm').action = `/users/${currentViewUserId}/reset-password`;
+                
+                // Clear previous inputs
+                document.getElementById('newPassword').value = '';
+                document.getElementById('newPasswordConfirmation').value = '';
+                
+                // Show reset password modal
+                const viewModal = bootstrap.Modal.getInstance(document.getElementById('viewUserModal'));
+                viewModal.hide();
+                
+                const resetModal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+                resetModal.show();
+            });
+        }
+    
+        // Handle reset password form submission - Check if element exists first
+        const resetPasswordForm = document.getElementById('resetPasswordForm');
+        if (resetPasswordForm) {
+            resetPasswordForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const url = this.action;
+                
+                fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        alert('Password reset successfully!');
+                        
+                        // Close the reset modal
+                        const resetModal = bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal'));
+                        resetModal.hide();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error resetting password');
                 });
             });
-        });
+        }
     </script>
     @endpush
 @endsection

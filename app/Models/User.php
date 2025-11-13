@@ -41,6 +41,8 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $appends = ['full_name']; 
+
     /**
      * Get the attributes that should be cast.
      *
@@ -51,6 +53,10 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
+            'date_disabled' => 'datetime',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
     }
 
@@ -60,9 +66,11 @@ class User extends Authenticatable
     }
 
     public function disabledBy()
-    {
-        return $this->belongsTo(User::class, 'disabled_by_user_id');
-    }
+{
+    return $this->belongsTo(User::class, 'disabled_by_user_id')->withDefault([
+        'full_name' => 'System'
+    ]);
+}
 
     // Helper methods
     public function getFullNameAttribute()

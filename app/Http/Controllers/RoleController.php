@@ -24,7 +24,8 @@ class RoleController extends Controller
             });
         }
 
-        $roles = $query->latest()->paginate(10);
+        $roles = $query->orderBy('id', 'asc')->paginate(10);        
+
         return view('roles.index', compact('roles'));
     }
 

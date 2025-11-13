@@ -24,7 +24,7 @@ class CategoryController extends Controller
             });
         }
 
-        $categories = $query->latest()->paginate(10);
+        $categories = $query->orderBy('id', 'asc')->paginate(10);        
         return view('categories.index', compact('categories'));
     }
 

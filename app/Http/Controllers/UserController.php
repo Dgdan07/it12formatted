@@ -41,7 +41,7 @@ class UserController extends Controller
             });
         }
 
-        $users = $query->latest()->paginate(10);
+        $users = $query->orderBy('id', 'asc')->paginate(10);        
         $roles = Role::all();
 
         return view('users.index', compact('users', 'roles', 'showArchived'));
@@ -193,5 +193,28 @@ class UserController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+    public function resetPassword(Request $request, User $user)
+    {
+        try {
+            $request->validate([
+                'password' => ['required', 'confirmed', 'min:8'],
+            ]);
+
+            $user->update([
+                'password' => Hash::make($request->password),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password reset successfully.'
+            ]);
+            
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
