@@ -8,52 +8,47 @@
     
     <!-- Page Header -->
     <div class="page-header">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <h2 class="mb-0">
-                    <i class="bi bi-people me-2"></i>
-                    Users Management
-                </h2>
-                <p class="text-muted mb-0 mt-1">Manage system users and their roles</p>
-            </div>
-            <div class="col-md-6 text-end">
-                <div class="d-flex justify-content-end align-items-center gap-3">
-                    <!-- Search Bar -->
-                    <form action="{{ route('users.index') }}" method="GET" class="d-flex">
-                        <input type="hidden" name="archived" value="{{ $showArchived ? 'true' : '' }}">
-                        <div class="input-group search-box">
-                            <input type="text" class="form-control" name="search" placeholder="Search users..." value="{{ request('search') }}">
-                            <button class="btn btn-outline-secondary" type="submit">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </div>
-                    </form>
-                    
-                    <!-- Archived/Active Toggle -->
-                    @if($showArchived)
-                        <a href="{{ route('users.index') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>
-                            Back to Active Users
-                        </a>
-                    @else
-                        <a href="{{ route('users.index', ['archived' => true]) }}" class="btn btn-outline-warning">
-                            <i class="bi bi-archive me-1"></i>
-                            Archive
-                        </a>
-                    @endif
-                    
-                    <!-- Add New User Button -->
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                        <i class="bi bi-plus-circle me-1"></i>
-                        Add New User
-                    </button>
-                </div>
-            </div>
-        </div>
+        <h2 class="mb-0">
+            <b>Users Management</b>
+        </h2>
     </div>
 
     <!-- Users Table -->
     <div class="table-container">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+
+            <!-- Search Bar -->
+            <form action="{{ route('users.index') }}" method="GET" class="d-flex flex-grow-1 me-3" style="max-width: 400px;">
+                <input type="hidden" name="archived" value="{{ $showArchived ? 'true' : '' }}">
+                <div class="input-group search-box w-100">
+                    <input type="text" class="form-control" name="search" placeholder="Search users..." value="{{ request('search') }}">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+    
+            <!-- Action Buttons (Archive / Add) -->
+            <div class="d-flex justify-content-end align-items-center gap-2">
+                @if($showArchived)
+                    <a href="{{ route('users.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back to Active Users
+                    </a>
+                @else
+                    <a href="{{ route('users.index', ['archived' => true]) }}" class="btn btn-outline-warning">
+                        <i class="bi bi-archive me-1"></i>
+                        Archive
+                    </a>
+                @endif
+    
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Add New User
+                </button>
+            </div>
+        </div>
+        
         <div class="table-responsive">
             <!-- Results Count -->
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -92,9 +87,7 @@
                         <td>{{ $user->full_name }}</td>
                         <td>{{ $user->email }}</td>
                         <td>{{ $user->contactNo ?? 'N/A' }}</td>
-                        <td>
-                            <span class="badge bg-primary">{{ $user->role->name }}</span>
-                        </td>
+                        <td class="primary">{{ $user->role->name }}</td>
                         <td>
                             @if($user->is_active)
                                 <span class="badge bg-success">Active</span>

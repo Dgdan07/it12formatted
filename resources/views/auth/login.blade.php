@@ -8,7 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body {
-            background: white;
+            background: #f8f9fa;
             height: 100vh;
             display: flex;
             align-items: center;
@@ -32,8 +32,8 @@
         }
         
         .login-header {
-            background: linear-gradient(135deg, var(--congress-blue) 0%, #0a5cb5 100%);
-            color: white;
+            background: white;
+            color: black;
             border-radius: 15px 15px 0 0;
             padding: 30px;
             text-align: center;
@@ -67,6 +67,7 @@
         <div class="login-header">
             <div class="d-flex align-items-center justify-content-center">
                 <div>
+                    <img src="{{ asset('images/atin_logo.png') }}" alt="Company Logo" class="img-fluid me-3" style="max-height: 100px;">
                     <h4 class="mb-0 fw-bold">ATIN</h4>
                     <small class="opacity-75">Industrial Hardware Supply Inc.</small>
                 </div>

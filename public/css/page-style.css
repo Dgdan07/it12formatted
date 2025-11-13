@@ -6,12 +6,9 @@ html, body {
 }
 
 .page-header {
-    background: white;
     border-radius: 10px;
     padding: 25px;
-    margin-bottom: 25px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-}
+    margin-bottom: 5px;}
 
 .table-container {
     background: white;

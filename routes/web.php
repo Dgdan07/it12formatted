@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,9 +24,11 @@ Route::middleware(['auth.simple'])->group(function () {
     })->name('dashboard');
 
     // Admin only routes
-    Route::middleware(['role:Administrator'])->group(function () { // Note: 'Admin' with capital A
+    Route::middleware(['role:Administrator'])->group(function () {
         Route::resource('roles', RoleController::class);
         Route::resource('users', UserController::class);
+        Route::resource('products', ProductController::class);
+        Route::resource('suppliers', SupplierController::class);
         Route::post('/users/{user}/archive', [UserController::class, 'archive'])->name('users.archive');
         Route::post('/users/{user}/restore', [UserController::class, 'restore'])->name('users.restore');
     });

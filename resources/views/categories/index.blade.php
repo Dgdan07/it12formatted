@@ -5,40 +5,32 @@
 @endpush
 @section('content')
     @include('components.alerts')
-    <!-- Page Header -->
+
     <div class="page-header">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <h2 class="mb-0">
-                    <i class="bi bi-tags me-2"></i>
-                    Categories Management
-                </h2>
-                <p class="text-muted mb-0 mt-1">Manage product categories</p>
-            </div>
-            <div class="col-md-6 text-end">
-                <div class="d-flex justify-content-end align-items-center gap-3">
-                    <!-- Search Bar -->
-                    <form action="{{ route('categories.index') }}" method="GET" class="d-flex">
-                        <div class="input-group search-box">
-                            <input type="text" class="form-control" name="search" placeholder="Search categories..." value="{{ request('search') }}">
-                            <button class="btn btn-outline-secondary" type="submit">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </div>
-                    </form>
-                    
-                    <!-- Add New Category Button -->
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-                        <i class="bi bi-plus-circle me-1"></i>
-                        Add New Category
-                    </button>
-                </div>
-            </div>
-        </div>
+        <h2 class="mb-0">
+            <b>Categories Management</b>
+        </h2>
     </div>
 
     <!-- Categories Table -->
     <div class="table-container">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <!-- Search Bar -->
+            <form action="{{ route('categories.index') }}" method="GET" class="d-flex">
+                <div class="input-group search-box">
+                    <input type="text" class="form-control" name="search" placeholder="Search categories..." value="{{ request('search') }}">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+    
+            <!-- Add New Category Button -->
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                <i class="bi bi-plus-circle me-1"></i>
+                Add New Category
+            </button>
+        </div>
         <div class="table-responsive">
             <!-- Results Count -->
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -70,10 +62,10 @@
                         <td>{{ $category->created_at->format('Y-m-d') }}</td>
                         <td>{{ $category->updated_at->format('Y-m-d') }}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-warning btn-action edit-category" data-id="{{ $category->id }}">
+                            <button class="btn btn-sm btn-outline-warning btn-action edit-category" data-id="{{ $category->id }}" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger btn-action delete-category" data-id="{{ $category->id }}" data-name="{{ $category->name }}">
+                            <button class="btn btn-sm btn-outline-danger btn-action delete-category" data-id="{{ $category->id }}" data-name="{{ $category->name }}" title="Delete">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </td>

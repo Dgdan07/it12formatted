@@ -5,40 +5,33 @@
 @endpush
 @section('content')
     @include('components.alerts')
-    <!-- Page Header -->
+
     <div class="page-header">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <h2 class="mb-0">
-                    <i class="bi bi-person-badge me-2"></i>
-                    Roles Management
-                </h2>
-                <p class="text-muted mb-0 mt-1">Manage user roles and permissions</p>
-            </div>
-            <div class="col-md-6 text-end">
-                <div class="d-flex justify-content-end align-items-center gap-3">
-                    <!-- Search Bar -->
-                    <form action="{{ route('roles.index') }}" method="GET" class="d-flex">
-                        <div class="input-group search-box">
-                            <input type="text" class="form-control" name="search" placeholder="Search roles..." value="{{ request('search') }}">
-                            <button class="btn btn-outline-secondary" type="submit">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </div>
-                    </form>
-                    
-                    <!-- Add New Role Button -->
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoleModal">
-                        <i class="bi bi-plus-circle me-1"></i>
-                        Add New Role
-                    </button>
-                </div>
-            </div>
-        </div>
+        <h2 class="mb-0">
+            <b>Role Management</b>
+        </h2>
     </div>
 
     <!-- Roles Table -->
     <div class="table-container">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <!-- Search Bar -->
+            <form action="{{ route('roles.index') }}" method="GET" class="d-flex">
+                <div class="input-group search-box">
+                    <input type="text" class="form-control" name="search" placeholder="Search roles..." value="{{ request('search') }}">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+    
+            <!-- Add New Role Button -->
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoleModal">
+                <i class="bi bi-plus-circle me-1"></i>
+                Add New Role
+            </button>
+        </div>
+    
         <div class="table-responsive">
             <!-- Results Count -->
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -70,10 +63,10 @@
                         <td>{{ $role->created_at->format('Y-m-d') }}</td>
                         <td>{{ $role->updated_at->format('Y-m-d') }}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-warning btn-action edit-role" data-id="{{ $role->id }}">
+                            <button class="btn btn-sm btn-outline-warning btn-action edit-role" data-id="{{ $role->id }}" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger btn-action delete-role" data-id="{{ $role->id }}" data-name="{{ $role->name }}">
+                            <button class="btn btn-sm btn-outline-danger btn-action delete-role" data-id="{{ $role->id }}" data-name="{{ $role->name }}" title="Delete">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </td>
@@ -224,7 +217,7 @@
                 const roleId = this.getAttribute('data-id');
                 const roleName = this.getAttribute('data-name');
                 
-                document.getElementById('deleteRoleName').textContent = name;
+                document.getElementById('deleteRoleName').textContent = roleName;
                 document.getElementById('deleteRoleForm').action = `/roles/${roleId}`;
                 
                 const modal = new bootstrap.Modal(document.getElementById('deleteRoleModal'));

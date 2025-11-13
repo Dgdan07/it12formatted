@@ -86,7 +86,18 @@
         .sidebar .nav-link.collapsed {
             background: transparent;
         }
-        
+        .sidebar .nav-link .chevron {
+            display: inline-block;               
+            transform-origin: center center;
+            transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+            pointer-events: none;                
+        }
+
+            .sidebar .nav-link[aria-expanded="true"] .chevron,
+            .sidebar .nav-link.expanded .chevron {   
+            transform: rotate(180deg);
+        }
+                    
         .sub-link {
             padding: 8px 15px 8px 35px !important;
             font-size: 0.9rem;
@@ -117,7 +128,7 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--congress-blue) 0%, var(--amber) 100%);
+            background: var(--amber);
             display: flex;
             align-items: center;
             justify-content: center;

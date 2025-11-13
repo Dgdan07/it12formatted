@@ -113,7 +113,7 @@ class RoleController extends Controller
     {
         try {
             if ($role->is_protected) {
-                return redirect()->route('roles.index')->with('error', 'The Administrator role cannot be deleted as it is essential for system stability.');
+                return redirect()->route('roles.index')->with('error', 'The Administrator role cannot be deleted');
             }
 
             if ($role->users()->exists()) {
