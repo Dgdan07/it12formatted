@@ -127,28 +127,20 @@ class SupplierController extends Controller
 
     public function archive(Supplier $supplier)
     {
-        try {
-            // Check if supplier can be archived (only prevent if active purchase orders exist)
-            if (!$supplier->canBeArchived()) {
-                $errorMessage = 'Cannot archive supplier. ';
-                $errorMessage .= 'Supplier has active purchase orders. Please complete or cancel the purchase orders first.';
-                
-                return redirect()->route('suppliers.index')->with('error', $errorMessage);
-            }
-
-            $currentUserId = session('user_id');
-
-            $supplier->update([
-                'is_active' => false,
-                'date_disabled' => now(),
-                'disabled_by_user_id' => $currentUserId,
-            ]);
-
-            return redirect()->route('suppliers.index')->with('success', 'Supplier archived successfully.');
-            
-        } catch (Exception $e) {
-            return redirect()->route('suppliers.index')->with('error', 'Error: ' . $e->getMessage());
+        // Check if supplier is a default supplier
+        if ($supplier->isDefaultSupplier()) {
+            return redirect()->back()->with('error', 'Cannot archive supplier that is set as default supplier for products.');
         }
+    
+        $currentUserId = session('user_id');
+      
+        $supplier->update([
+            'is_active' => false,
+            'date_disabled' => now(),
+            'disabled_by_user_id' => $currentUserId,
+        ]);
+    
+        return redirect()->back()->with('success', 'Supplier archived successfully.');
     }
 
     public function restore(Supplier $supplier)

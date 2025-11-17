@@ -40,10 +40,10 @@ class Supplier extends Model
                     ->withTimestamps();
     }
 
-    // Relationship with purchase orders
-    public function purchaseOrders()
+    // Relationship with stock ins
+    public function stockIns()
     {
-        return $this->hasMany(PurchaseOrder::class);
+        return $this->hasMany(StockIn::class);
     }
 
     // Check if supplier has associated products
@@ -52,33 +52,23 @@ class Supplier extends Model
         return $this->products()->exists();
     }
 
-    // Check if supplier has associated purchase orders
-    public function hasPurchaseOrders()
+    // Check if supplier has associated stock ins
+    public function hasStockIns()
     {
-        return $this->purchaseOrders()->exists();
+        return $this->stockIns()->exists();
     }
 
     // Check if supplier can be archived
-    // Only prevent archiving if there are active purchase orders
     public function canBeArchived()
     {
-        // Only prevent if there are active purchase orders that might reference this supplier
-        return !$this->hasActivePurchaseOrders();
+        return true;
     }
 
-    // Check if supplier has active purchase orders (not completed/cancelled)
-    public function hasActivePurchaseOrders()
+    // Get recent stock ins count
+    public function getRecentStockInsCountAttribute()
     {
-        return $this->purchaseOrders()
-                    ->whereNotIn('status', ['Completed', 'Cancelled', 'Received'])
-                    ->exists();
-    }
-
-    // Get active purchase orders count
-    public function getActivePurchaseOrdersCountAttribute()
-    {
-        return $this->purchaseOrders()
-                    ->whereNotIn('status', ['Completed', 'Cancelled', 'Received'])
+        return $this->stockIns()
+                    ->where('stock_in_date', '>=', now()->subDays(30))
                     ->count();
     }
 
@@ -91,5 +81,10 @@ class Supplier extends Model
     public function scopeArchived($query)
     {
         return $query->where('is_active', false);
+    }
+
+    public function isDefaultSupplier()
+    {
+        return Product::where('default_supplier_id', $this->id)->exists();
     }
 }

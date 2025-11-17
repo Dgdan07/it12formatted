@@ -135,7 +135,7 @@
                         <h5 class="mb-3"><i class="bi bi-truck me-2"></i>Primary Supplier & Cost</h5>
                         
                         <div class="row supplier-item bg-light border-success g-0">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6 mb-3 pe-3">
                                 <label for="default_supplier_id" class="form-label">Primary Supplier <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <select class="form-select supplier-select" id="default_supplier_id" name="default_supplier_id" required>
@@ -213,16 +213,20 @@
                     <form id="quickSupplierForm">
                         @csrf
                         <div class="mb-3">
-                            <label for="quick_supplier_name" class="form-label">Supplier Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="quick_supplier_name" name="supplier_name" required maxlength="150">
+                            <label for="supplier_name" class="form-label">Supplier Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="supplier_name" name="supplier_name" placeholder="Enter supplier name" maxlength="150" required>
                         </div>
                         <div class="mb-3">
-                            <label for="quick_contactNO" class="form-label">Contact Information</label>
-                            <input type="text" class="form-control" id="quick_contactNO" name="contactNO" maxlength="50">
+                            <label for="contactNO" class="form-label">Contact Number</label>
+                            <input type="text" class="form-control" id="contactNO" name="contactNO" 
+                                   placeholder="Enter contact number" 
+                                   maxlength="11"
+                                   pattern="[0-9]{0,11}"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)">
                         </div>
                         <div class="mb-3">
-                            <label for="quick_address" class="form-label">Address</label>
-                            <textarea class="form-control" id="quick_address" name="address" rows="3" maxlength="255"></textarea>
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" placeholder="Enter address" maxlength="255" rows="3"></textarea>
                         </div>
                     </form>
                 </div>

@@ -119,10 +119,6 @@
                                 @endif
                             </button>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item {{ $sort == 'id' ? 'active' : '' }}" 
-                                    href="{{ request()->fullUrlWithQuery(['sort' => 'id', 'direction' => $sort == 'id' && $direction == 'asc' ? 'desc' : 'asc']) }}">
-                                    ID @if($sort == 'id') <i class="bi bi-arrow-{{ $direction == 'asc' ? 'up' : 'down' }} float-end"></i> @endif
-                                </a></li>
                                 <li><a class="dropdown-item {{ $sort == 'name' ? 'active' : '' }}" 
                                     href="{{ request()->fullUrlWithQuery(['sort' => 'name', 'direction' => $sort == 'name' && $direction == 'asc' ? 'desc' : 'asc']) }}">
                                     Name @if($sort == 'name') <i class="bi bi-arrow-{{ $direction == 'asc' ? 'up' : 'down' }} float-end"></i> @endif
@@ -189,7 +185,6 @@
             <table class="table table-hover">
                 <thead class="table-light">
                     <tr>
-                        <th>ID</th>
                         <th>SKU</th>
                         <th>Image</th>
                         <th>Product Name</th>
@@ -204,7 +199,6 @@
                 <tbody>
                     @forelse($products as $product)
                     <tr class="{{ $product->quantity_in_stock == 0 ? 'out-of-stock' : ($product->quantity_in_stock <= $product->reorder_level ? 'low-stock' : '') }}">
-                        <td>{{ $product->id }}</td>
                         <td><code>{{ $product->sku }}</code></td>
                         <td>
                             <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="product-image">

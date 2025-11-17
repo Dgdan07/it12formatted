@@ -95,11 +95,36 @@
         font-weight: bold;
         margin: 10px 0;
     }
+    
+    /* New styles for order info */
+    .order-info {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-left: 4px solid #007bff;
+    }
+    
+    .order-info-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+    
+    .order-info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .order-info-value {
+        color: #6c757d;
+    }
 </style>
 @endpush
 
 @section('content')
-<div class="pos-container">
+<div class="pos-container" data-cashier-name="{{ session('user_full_name') ?? session('user_name') ?? 'Cashier' }}">
     <!-- Items Section -->
     <div class="items-section">
         <h3>Point of Sale</h3>
@@ -123,6 +148,26 @@
     <!-- Summary Section -->
     <div class="summary-section">
         <h4>Order Summary</h4>
+        
+        <!-- Order Information -->
+        <div class="order-info">
+            <div class="order-info-item">
+                <span class="order-info-label">Date:</span>
+                <span class="order-info-value" id="currentDate">{{ now()->format('M d, Y') }}</span>
+            </div>
+            <div class="order-info-item">
+                <span class="order-info-label">Time:</span>
+                <span class="order-info-value" id="currentTime">{{ now()->format('h:i A') }}</span>
+            </div>
+            <div class="order-info-item">
+                <span class="order-info-label">Cashier:</span>
+                <span class="order-info-value" id="cashierName">{{ session('user_full_name') ?? session('user_name') ?? 'Cashier' }}</span>
+            </div>
+            <div class="order-info-item">
+                <span class="order-info-label">Sale #:</span>
+                <span class="order-info-value" id="saleNumber">-</span>
+            </div>
+        </div>
         
         <!-- Customer Details -->
         <div class="mb-3">
@@ -194,7 +239,20 @@
         async init() {
             await this.initializeSale();
             this.setupEventListeners();
+            this.startClock();
             // Don't load items initially - we'll manage locally
+        }
+
+        startClock() {
+            // Update time every second
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            }, 1000);
         }
     
         async initializeSale() {
@@ -212,6 +270,7 @@
                 const data = await response.json();
                 if (data.success) {
                     this.saleId = data.sale.id;
+                    document.getElementById('saleNumber').textContent = this.saleId;
                     console.log('Sale initialized:', this.saleId);
                 } else {
                     throw new Error(data.message);
@@ -529,27 +588,34 @@
         }
     
         showReceipt(sale, changeGiven) {
+            // Get cashier name from data attribute
+            const cashierName = document.querySelector('.pos-container').dataset.cashierName;
+            
+            // Safely get payment information
+            const paymentMethod = sale.payment && sale.payment[0] ? sale.payment[0].payment_method : 'Unknown';
+            const amountTendered = sale.payment && sale.payment[0] ? sale.payment[0].amount_tendered : this.total;
+            
             const receipt = `
-    Receipt - Sale #${sale.id}
-    Date: ${new Date(sale.sale_date).toLocaleString()}
-    Cashier: {{ session('user_full_name') ?? 'Cashier' }}
-    
-    Items:
-    ${sale.items.map(item => 
-        `${item.product.name} - ${item.quantity_sold} × ₱${item.unit_price} = ₱${(item.quantity_sold * item.unit_price).toFixed(2)}`
-    ).join('\n')}
-    
-    Total: ₱${this.total.toFixed(2)}
-    Payment Method: ${sale.payment[0].payment_method}
-    Amount Tendered: ₱${sale.payment[0].amount_tendered.toFixed(2)}
-    ${changeGiven > 0 ? `Change Given: ₱${changeGiven.toFixed(2)}` : ''}
-    
-    Thank you for your purchase!
+        Receipt - Sale #${sale.id}
+        Date: ${new Date(sale.sale_date).toLocaleString()}
+        Cashier: ${cashierName}
+
+        Items:
+        ${sale.items.map(item => 
+            `${item.product.name} - ${item.quantity_sold} × ₱${parseFloat(item.unit_price).toFixed(2)} = ₱${(item.quantity_sold * parseFloat(item.unit_price)).toFixed(2)}`
+        ).join('\n')}
+
+        Total: ₱${this.total.toFixed(2)}
+        Payment Method: ${paymentMethod}
+        Amount Tendered: ₱${amountTendered.toFixed(2)}
+        ${changeGiven > 0 ? `Change Given: ₱${changeGiven.toFixed(2)}` : ''}
+
+        Thank you for your purchase!
             `;
-    
+
             alert(receipt);
         }
-    
+                
         resetUI() {
             document.getElementById('productSearch').value = '';
             document.getElementById('customerName').value = '';
@@ -569,5 +635,5 @@
     document.addEventListener('DOMContentLoaded', () => {
         pos = new POSSystem();
     });
-    </script>
+</script>
 @endpush

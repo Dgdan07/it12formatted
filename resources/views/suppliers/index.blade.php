@@ -118,8 +118,7 @@
                                 <button class="btn btn-sm btn-outline-danger btn-action archive-supplier" 
                                         data-id="{{ $supplier->id }}" 
                                         data-name="{{ $supplier->supplier_name }}"
-                                        data-has-active-orders="{{ $supplier->hasActivePurchaseOrders() ? 'true' : 'false' }}"
-                                        data-active-orders-count="{{ $supplier->active_purchase_orders_count }}"
+                                        data-is-default-supplier="{{ $supplier->isDefaultSupplier() ? 'true' : 'false' }}"
                                         title="Archive">
                                     <i class="bi bi-archive"></i>
                                 </button>
@@ -167,7 +166,11 @@
                         </div>
                         <div class="mb-3">
                             <label for="contactNO" class="form-label">Contact Number</label>
-                            <input type="number" pattern="[0-9]*" inputmode="numeric" class="form-control" id="contactNO" name="contactNO" placeholder="Enter contact number" maxlength="11">
+                            <input type="text" class="form-control" id="contactNO" name="contactNO" 
+                                   placeholder="Enter contact number" 
+                                   maxlength="11"
+                                   pattern="[0-9]{0,11}"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)">
                         </div>
                         <div class="mb-3">
                             <label for="address" class="form-label">Address</label>
@@ -204,7 +207,10 @@
                         </div>
                         <div class="mb-3">
                             <label for="editContactInfo" class="form-label">Contact Number</label>
-                            <input type="number" pattern="[0-9]*" inputmode="numeric" class="form-control" id="editContactInfo" name="contactNO" maxlength="11">
+                            <input type="text" class="form-control" id="editContactInfo" name="contactNO" 
+                                maxlength="11"
+                                pattern="[0-9]{0,11}"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)">
                         </div>
                         <div class="mb-3">
                             <label for="editAddress" class="form-label">Address</label>
@@ -298,12 +304,11 @@
                             <h5 class="mt-3">Are you sure you want to archive this supplier?</h5>
                             <p class="text-muted">Supplier: <strong id="archiveSupplierName"></strong></p>
                             
-                            <!-- Warning about active purchase orders -->
-                            <div class="alert alert-danger mt-3" id="archiveWarning" style="display: none;">
+                            <!-- Warning about being default supplier -->
+                            <div class="alert alert-danger mt-3" id="defaultSupplierWarning" style="display: none;">
                                 <i class="bi bi-exclamation-triangle me-2"></i>
-                                <strong>Warning:</strong> This supplier cannot be archived because it has 
-                                <strong id="activeOrdersCount">0</strong> active purchase orders.
-                                <br><small>Please complete or cancel the purchase orders first.</small>
+                                <strong>Warning:</strong> This supplier cannot be archived because it is set as the default supplier for one or more products.
+                                <br><small>Please change the default supplier for those products first.</small>
                             </div>
                             
                             <!-- Info about products -->
@@ -434,33 +439,28 @@
             });
         });
         
-        // Archive Supplier
+         // Archive Supplier
         document.querySelectorAll('.archive-supplier').forEach(button => {
             button.addEventListener('click', function() {
                 const supplierId = this.getAttribute('data-id');
                 const supplierName = this.getAttribute('data-name');
-                const hasActiveOrders = this.getAttribute('data-has-active-orders') === 'true';
-                const activeOrdersCount = this.getAttribute('data-active-orders-count');
+                const isDefaultSupplier = this.getAttribute('data-is-default-supplier') === 'true';
                 
                 document.getElementById('archiveSupplierName').textContent = supplierName;
                 document.getElementById('archiveSupplierForm').action = `/suppliers/${supplierId}/archive`;
                 
-                const productsInfoDiv = document.getElementById('productsInfo');
+                const defaultSupplierWarning = document.getElementById('defaultSupplierWarning');
                 const submitBtn = document.getElementById('archiveSubmitBtn');
-                const activeOrdersCountSpan = document.getElementById('activeOrdersCount');
                 
-                if (hasActiveOrders) {
+                if (isDefaultSupplier) {
                     submitBtn.disabled = true;
                     submitBtn.textContent = 'Cannot Archive';
-                    activeOrdersCountSpan.textContent = activeOrdersCount;
+                    defaultSupplierWarning.style.display = 'block';
                 } else {
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Archive Supplier';
+                    defaultSupplierWarning.style.display = 'none';
                 }
-                
-                // Always show products info if supplier has products
-                // You might want to add a data attribute for hasProducts if needed
-                productsInfoDiv.style.display = 'block';
                 
                 const modal = new bootstrap.Modal(document.getElementById('archiveSupplierModal'));
                 modal.show();

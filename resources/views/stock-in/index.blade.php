@@ -24,12 +24,11 @@
         <div class="card-body">
             <div class="row g-3 align-items-center">
                 <!-- Search & Clear -->
-                <div class="col-md-6">
+                <div class="col-md-8">
                     <div class="d-flex align-items-center">
                         <form action="{{ route('stock-ins.index') }}" method="GET" class="d-flex flex-grow-1 me-2">
                             <input type="hidden" name="sort" value="{{ $sort }}">
                             <input type="hidden" name="direction" value="{{ $direction }}">
-                            <input type="hidden" name="type" value="{{ request('type') }}">
                             <div class="input-group search-box w-100">
                                 <input type="text" class="form-control" name="search" placeholder="Search by reference or product..." value="{{ request('search') }}">
                                 <button class="btn btn-outline-secondary" type="submit">
@@ -46,17 +45,8 @@
                     </div>
                 </div>
 
-                <!-- Type Filter -->
-                <div class="col-md-3">
-                    <select class="form-select" onchange="window.location.href=this.value">
-                        <option value="{{ request()->fullUrlWithQuery(['type' => null]) }}">All Types</option>
-                        <option value="{{ request()->fullUrlWithQuery(['type' => 'PO-Based']) }}" {{ request('type') == 'PO-Based' ? 'selected' : '' }}>PO-Based</option>
-                        <option value="{{ request()->fullUrlWithQuery(['type' => 'Direct Purchase']) }}" {{ request('type') == 'Direct Purchase' ? 'selected' : '' }}>Direct Purchase</option>
-                    </select>
-                </div>
-
                 <!-- Sort -->
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="d-flex gap-2 justify-content-end">
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
@@ -73,10 +63,6 @@
                                 <li><a class="dropdown-item {{ $sort == 'stock_in_date' ? 'active' : '' }}" 
                                        href="{{ request()->fullUrlWithQuery(['sort' => 'stock_in_date', 'direction' => $sort == 'stock_in_date' && $direction == 'asc' ? 'desc' : 'asc']) }}">
                                     Date @if($sort == 'stock_in_date') <i class="bi bi-arrow-{{ $direction == 'asc' ? 'up' : 'down' }} float-end"></i> @endif
-                                </a></li>
-                                <li><a class="dropdown-item {{ $sort == 'stock_in_type' ? 'active' : '' }}" 
-                                       href="{{ request()->fullUrlWithQuery(['sort' => 'stock_in_type', 'direction' => $sort == 'stock_in_type' && $direction == 'asc' ? 'desc' : 'asc']) }}">
-                                    Type @if($sort == 'stock_in_type') <i class="bi bi-arrow-{{ $direction == 'asc' ? 'up' : 'down' }} float-end"></i> @endif
                                 </a></li>
                                 <li><a class="dropdown-item {{ $sort == 'reference_no' ? 'active' : '' }}" 
                                        href="{{ request()->fullUrlWithQuery(['sort' => 'reference_no', 'direction' => $sort == 'reference_no' && $direction == 'asc' ? 'desc' : 'asc']) }}">
@@ -97,14 +83,8 @@
             <div class="text-muted mb-3">
                 @if(request('search'))
                     Displaying {{ $stockIns->count() }} of {{ $stockIns->total() }} results for "{{ request('search') }}"
-                    @if(request('type'))
-                        in {{ request('type') }} type
-                    @endif
                 @else
                     Displaying {{ $stockIns->count() }} of {{ $stockIns->total() }} stock in records
-                    @if(request('type'))
-                        in {{ request('type') }} type
-                    @endif
                 @endif
             </div>
             <table class="table table-hover">
@@ -112,8 +92,8 @@
                     <tr>
                         <th>ID</th>
                         <th>Date</th>
-                        <th>Type</th>
                         <th>Reference No</th>
+                        <th>Supplier</th>
                         <th>Received By</th>
                         <th>Items</th>
                         <th>Total Quantity</th>
@@ -126,16 +106,12 @@
                     <tr>
                         <td>{{ $stockIn->id }}</td>
                         <td>{{ $stockIn->stock_in_date->format('Y-m-d H:i') }}</td>
-                        <td>
-                            <span class="badge bg-{{ $stockIn->stock_in_type == 'PO-Based' ? 'primary' : 'success' }}">
-                                {{ $stockIn->stock_in_type }}
-                            </span>
-                        </td>
                         <td>{{ $stockIn->reference_no ?? 'N/A' }}</td>
+                        <td>{{ $stockIn->supplier->supplier_name ?? 'N/A' }}</td>
                         <td>{{ $stockIn->receivedBy ? $stockIn->receivedBy->full_name : 'Unknown User' }}</td>
-                        <td>{{ $stockIn->total_items }}</td>
-                        <td>{{ $stockIn->total_quantity }}</td>
-                        <td>₱{{ number_format($stockIn->total_cost, 2) }}</td>
+                        <td>{{ $stockIn->items->count() }}</td>
+                        <td>{{ $stockIn->items->sum('quantity_received') }}</td>
+                        <td>₱{{ number_format($stockIn->items->sum(function($item) { return $item->quantity_received * $item->actual_unit_cost; }), 2) }}</td>
                         <td>
                             <button class="btn btn-sm btn-outline-info btn-action view-stock-in" data-id="{{ $stockIn->id }}" title="View Details">
                                 <i class="bi bi-eye"></i>
@@ -183,12 +159,12 @@
                                     <span class="fw-semibold" id="viewStockInDate"></span>
                                 </div>
                                 <div class="list-group-item d-flex justify-content-between px-0">
-                                    <small class="text-muted">Type:</small>
-                                    <span class="fw-semibold" id="viewStockInType"></span>
-                                </div>
-                                <div class="list-group-item d-flex justify-content-between px-0">
                                     <small class="text-muted">Reference No:</small>
                                     <span class="fw-semibold" id="viewReferenceNo">N/A</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between px-0">
+                                    <small class="text-muted">Supplier:</small>
+                                    <span class="fw-semibold" id="viewSupplier"></span>
                                 </div>
                             </div>
                         </div>
@@ -199,12 +175,12 @@
                                     <span class="fw-semibold" id="viewReceivedBy"></span>
                                 </div>
                                 <div class="list-group-item d-flex justify-content-between px-0">
-                                    <small class="text-muted">Purchase Order:</small>
-                                    <span class="fw-semibold" id="viewPurchaseOrder">N/A</span>
-                                </div>
-                                <div class="list-group-item d-flex justify-content-between px-0">
                                     <small class="text-muted">Total Items:</small>
                                     <span class="fw-semibold" id="viewTotalItems"></span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between px-0">
+                                    <small class="text-muted">Total Quantity:</small>
+                                    <span class="fw-semibold" id="viewTotalQuantity"></span>
                                 </div>
                                 <div class="list-group-item d-flex justify-content-between px-0">
                                     <small class="text-muted">Total Cost:</small>
@@ -253,12 +229,17 @@
                     .then(stockIn => {
                         document.getElementById('viewStockInId').textContent = stockIn.id;
                         document.getElementById('viewStockInDate').textContent = new Date(stockIn.stock_in_date).toLocaleString();
-                        document.getElementById('viewStockInType').textContent = stockIn.stock_in_type;
                         document.getElementById('viewReferenceNo').textContent = stockIn.reference_no || 'N/A';
+                        document.getElementById('viewSupplier').textContent = stockIn.supplier ? stockIn.supplier.supplier_name : 'N/A';
                         document.getElementById('viewReceivedBy').textContent = stockIn.received_by.full_name;
-                        document.getElementById('viewPurchaseOrder').textContent = stockIn.purchase_order ? stockIn.purchase_order.po_number : 'N/A';
                         document.getElementById('viewTotalItems').textContent = stockIn.items.length;
-                        document.getElementById('viewTotalCost').textContent = '₱' + parseFloat(stockIn.total_cost).toFixed(2);
+                        
+                        // Calculate totals
+                        const totalQuantity = stockIn.items.reduce((sum, item) => sum + parseInt(item.quantity_received), 0);
+                        const totalCost = stockIn.items.reduce((sum, item) => sum + (item.quantity_received * item.actual_unit_cost), 0);
+                        
+                        document.getElementById('viewTotalQuantity').textContent = totalQuantity;
+                        document.getElementById('viewTotalCost').textContent = '₱' + parseFloat(totalCost).toFixed(2);
                         
                         // Populate items table
                         const itemsTable = document.getElementById('viewItemsTable');

@@ -192,7 +192,11 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="contactNo" class="form-label">Contact Number</label>
-                                    <input type="number" pattern="[0-9]*" inputmode="numeric" class="form-control" id="contactNo" name="contactNo" placeholder="Enter contact number" maxlength="50">
+                                    <input type="text" class="form-control" id="contactNo" name="contactNo" 
+                                           placeholder="Enter contact number" 
+                                           maxlength="11"
+                                           pattern="[0-9]{0,11}" maxlength="100"
+                                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)">
                                 </div>
                                 <div class="mb-3">
                                     <label for="role_id" class="form-label">Role <span class="text-danger">*</span></label>
@@ -205,11 +209,11 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
-                                    <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" required>
+                                    <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" required maxlength="100">
                                 </div>
                                 <div class="mb-3">
                                     <label for="password_confirmation" class="form-label">Confirm Password <span class="text-danger">*</span></label>
-                                    <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" placeholder="Confirm password" required>
+                                    <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" placeholder="Confirm password" required maxlength="100">
                                 </div>
                             </div>
                         </div>
@@ -242,29 +246,32 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="editUsername" class="form-label">Username <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="editUsername" name="username" maxlength="50" required>
+                                    <input type="text" class="form-control" id="editUsername" placeholder="Enter username" name="username" maxlength="50" required>
                                 </div>
                                 <div class="mb-3">
                                     <label for="editFName" class="form-label">First Name <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="editFName" name="f_name" maxlength="100" required>
+                                    <input type="text" class="form-control" id="editFName" placeholder="Enter first name" name="f_name" maxlength="100" required>
                                 </div>
                                 <div class="mb-3">
                                     <label for="editMName" class="form-label">Middle Name</label>
-                                    <input type="text" class="form-control" id="editMName" name="m_name" maxlength="100">
+                                    <input type="text" class="form-control" id="editMName" placeholder="Enter middle name" name="m_name" maxlength="100">
                                 </div>
                                 <div class="mb-3">
                                     <label for="editLName" class="form-label">Last Name <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="editLName" name="l_name" maxlength="100" required>
+                                    <input type="text" class="form-control" id="editLName" placeholder="Enter last name" name="l_name" maxlength="100" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="editEmail" class="form-label">Email <span class="text-danger">*</span></label>
-                                    <input type="email" class="form-control" id="editEmail" name="email" required>
+                                    <input type="email" class="form-control" id="editEmail" placeholder="Enter email" name="email" maxlength="100" required>
                                 </div>
                                 <div class="mb-3">
                                     <label for="editContactNo" class="form-label">Contact Number</label>
-                                    <input type="number" pattern="[0-9]*" inputmode="numeric" class="form-control" id="editContactNo" name="contactNo" maxlength="50">
+                                    <input type="text" class="form-control" id="editContactNo" name="contactNo" 
+                                           maxlength="11" placeholder="Enter contact number" 
+                                           pattern="[0-9]{0,11}"
+                                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)">
                                 </div>
                                 <div class="mb-3">
                                     <label for="editRoleId" class="form-label">Role <span class="text-danger">*</span></label>
@@ -442,12 +449,12 @@
                         
                         <div class="mb-3">
                             <label for="newPassword" class="form-label">New Password <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" id="newPassword" name="password" placeholder="Enter new password" required>
+                            <input type="password" class="form-control" id="newPassword" name="password" placeholder="Enter new password" required maxlength="100">
                             <div class="form-text">Minimum 8 characters</div>
                         </div>
                         <div class="mb-3">
                             <label for="newPasswordConfirmation" class="form-label">Confirm New Password <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" id="newPasswordConfirmation" name="password_confirmation" placeholder="Confirm new password" required>
+                            <input type="password" class="form-control" id="newPasswordConfirmation" name="password_confirmation" placeholder="Confirm new password" required maxlength="100">
                         </div>
                         
                         <div class="alert alert-info">

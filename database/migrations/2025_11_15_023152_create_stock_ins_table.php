@@ -15,12 +15,7 @@ return new class extends Migration
             $table->id();
 
             $table->dateTime('stock_in_date');
-            $table->enum('stock_in_type', ['PO-Based', 'Direct Purchase']);
             $table->string('reference_no', 100)->nullable();
-            
-            // Foreign keys - also use snake_case
-            $table->unsignedBigInteger('purchase_order_id')->nullable();
-            $table->foreign('purchase_order_id')->references('id')->on('purchase_orders')->onDelete('set null');
             
             $table->unsignedBigInteger('received_by_user_id');
             $table->foreign('received_by_user_id')->references('id')->on('users')->onDelete('restrict');

@@ -21,13 +21,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/dashboard" class="nav-link {{ request()->is('dashboard') ? 'active' : '' }}">
-                    <i class="bi bi-speedometer2 me-3"></i>
-                    <span>Inventory Dashboard</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('pos.index') }}" class="nav-link {{ request()->is('POS') ? 'active' : '' }}">
+                <a href="{{ route('pos.index') }}" class="nav-link {{ request()->is('pos') ? 'active' : '' }}">
                     <i class="bi bi-cash-stack me-3"></i>
                     <span>POS</span>
                 </a>
@@ -86,13 +80,7 @@
                 </div>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link {{ request()->is('orders*') ? 'active' : '' }}">
-                    <i class="bi bi-cart me-3"></i>
-                    <span>Purchase Orders</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('stock-ins.index') }}" class="nav-link {{ request()->is('orders*') ? 'active' : '' }}">
+                <a href="{{ route('stock-ins.index') }}" class="nav-link {{ request()->is('stock-ins*') ? 'active' : '' }}">
                     <i class="bi bi-cart me-3"></i>
                     <span>Stock In</span>
                 </a>

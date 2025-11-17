@@ -22,20 +22,6 @@
         color: #dc3545;
         cursor: pointer;
     }
-    .cost-discrepancy {
-        background-color: #fff3cd !important;
-        border-color: #ffc107 !important;
-    }
-    .quantity-discrepancy {
-        background-color: #f8d7da !important;
-        border-color: #dc3545 !important;
-    }
-    .po-details {
-        background-color: #e7f3ff;
-        border-left: 4px solid #0d6efd;
-        padding: 15px;
-        margin-bottom: 20px;
-    }
 </style>
 @endpush
 
@@ -127,30 +113,6 @@
                         <!-- Left Column -->
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Receipt Type <span class="text-danger">*</span></label>
-                                <div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input receipt-type" type="radio" name="panels[${panelCount}][stock_in_type]" value="PO-Based" required>
-                                        <label class="form-check-label">PO-Based</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input receipt-type" type="radio" name="panels[${panelCount}][stock_in_type]" value="Direct Purchase">
-                                        <label class="form-check-label">Direct Purchase</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mb-3" id="poSection${panelCount}" style="display: none;">
-                                <label class="form-label">Purchase Order <span class="text-danger">*</span></label>
-                                <select class="form-select purchase-order-select" name="panels[${panelCount}][purchase_order_id]" onchange="loadPurchaseOrderDetails(${panelCount}, this.value)">
-                                    <option value="">Select Purchase Order</option>
-                                    @foreach($purchaseOrders as $po)
-                                        <option value="{{ $po->id }}">PO #{{ $po->id }} - {{ $po->created_at->format('m/d/Y') }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
                                 <label class="form-label">Supplier <span class="text-danger">*</span></label>
                                 <select class="form-select supplier-select" name="panels[${panelCount}][supplier_id]" required onchange="handleSupplierChange(${panelCount}, this.value)">
                                     <option value="">Select Supplier</option>
@@ -194,11 +156,6 @@
                                 <input type="text" class="form-control" value="{{ session('user_name') ?? 'Current User' }}" readonly>
                                 <input type="hidden" name="panels[${panelCount}][received_by_user_id]" value="{{ session('user_id') ?? '' }}">
                             </div>
-
-                            <div id="poDetails${panelCount}" class="po-details" style="display: none;">
-                                <h6>Purchase Order Details</h6>
-                                <div id="poDetailsContent${panelCount}"></div>
-                            </div>
                         </div>
                     </div>
 
@@ -206,7 +163,7 @@
                     <div class="mt-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6>Items</h6>
-                            <button type="button" class="btn btn-outline-primary btn-sm" id="add-item-${panelCount}" onclick="addItemRow(${panelCount})" style="display: none;">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="add-item-${panelCount}" onclick="addItemRow(${panelCount})">
                                 Add Item
                             </button>
                         </div>
@@ -216,7 +173,6 @@
             `;
 
             container.insertAdjacentHTML('beforeend', panelHtml);
-            attachReceiptTypeListeners(panelCount);
         });
 
         // Handle supplier changes
@@ -282,111 +238,7 @@
                 });
         }
 
-        // Attach receipt type listeners
-        function attachReceiptTypeListeners(panelId) {
-            document.querySelectorAll(`#panel-${panelId} .receipt-type`).forEach(radio => {
-                radio.addEventListener('change', () => handleReceiptTypeChange(panelId, radio.value));
-            });
-        }
-
-        // Handle receipt type change
-        function handleReceiptTypeChange(panelId, type) {
-            const poSection = document.getElementById(`poSection${panelId}`);
-            const addItemBtn = document.getElementById(`add-item-${panelId}`);
-            const itemsContainer = document.getElementById(`items-container-${panelId}`);
-            const poDetails = document.getElementById(`poDetails${panelId}`);
-
-            if (type === 'PO-Based') {
-                poSection.style.display = 'block';
-                addItemBtn.style.display = 'none';
-                itemsContainer.innerHTML = '';
-                addedProducts.get(panelId).clear();
-            } else {
-                poSection.style.display = 'none';
-                addItemBtn.style.display = 'block';
-                poDetails.style.display = 'none';
-                itemsContainer.innerHTML = '';
-                addedProducts.get(panelId).clear();
-            }
-        }
-
-        // Load PO details
-        function loadPurchaseOrderDetails(panelId, poId) {
-            if (!poId) {
-                document.getElementById(`poDetails${panelId}`).style.display = 'none';
-                document.getElementById(`items-container-${panelId}`).innerHTML = '';
-                addedProducts.get(panelId).clear();
-                return;
-            }
-
-            fetch(`/purchase-orders/${poId}/details`)
-                .then(r => r.json())
-                .then(po => {
-                    document.querySelector(`#panel-${panelId} .supplier-select`).value = po.supplier_id;
-
-                    const content = document.getElementById(`poDetailsContent${panelId}`);
-                    content.innerHTML = `
-                        <div class="row small">
-                            <div class="col-6"><strong>Supplier:</strong> ${po.supplier.supplier_name}</div>
-                            <div class="col-6"><strong>Total:</strong> ₱${parseFloat(po.total_amount).toFixed(2)}</div>
-                            <div class="col-6"><strong>Status:</strong> ${po.status}</div>
-                            <div class="col-6"><strong>Date:</strong> ${new Date(po.created_at).toLocaleDateString()}</div>
-                        </div>
-                    `;
-                    document.getElementById(`poDetails${panelId}`).style.display = 'block';
-
-                    const container = document.getElementById(`items-container-${panelId}`);
-                    container.innerHTML = '';
-                    addedProducts.get(panelId).clear();
-
-                    po.items.forEach(item => {
-                        const remaining = item.quantity_ordered - (item.quantity_received || 0);
-                        if (remaining > 0) addPOItemRow(panelId, item, remaining);
-                    });
-                })
-                .catch(() => alert('Error loading PO'));
-        }
-
-        // Add PO item
-        function addPOItemRow(panelId, poItem, remainingQty) {
-            const container = document.getElementById(`items-container-${panelId}`);
-            const itemId = Date.now();
-
-            container.insertAdjacentHTML('beforeend', `
-                <div class="item-row" id="item-${panelId}-${itemId}">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <input type="text" class="form-control" value="${poItem.product.name}" readonly>
-                            <input type="hidden" name="panels[${panelId}][items][${itemId}][product_id]" value="${poItem.product_id}">
-                        </div>
-                        <div class="col-md-2">
-                            <input type="number" class="form-control" value="${poItem.quantity_ordered}" readonly>
-                        </div>
-                        <div class="col-md-2">
-                            <input type="number" class="form-control" value="${remainingQty}" readonly>
-                        </div>
-                        <div class="col-md-2">
-                            <input type="number" class="form-control quantity-received"
-                                   name="panels[${panelId}][items][${itemId}][quantity_received]"
-                                   min="1" max="${remainingQty}" required
-                                   oninput="checkQuantityDiscrepancy(${panelId}, ${itemId}, ${remainingQty}, this.value)">
-                        </div>
-                        <div class="col-md-2">
-                            <div class="input-group">
-                                <span class="input-group-text">₱</span>
-                                <input type="number" class="form-control unit-cost"
-                                       name="panels[${panelId}][items][${itemId}][actual_unit_cost]"
-                                       step="0.01" min="0" value="${poItem.unit_cost}" required
-                                       oninput="checkCostDiscrepancy(${panelId}, ${itemId}, ${poItem.unit_cost}, this.value)">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `);
-            addedProducts.get(panelId).add(poItem.product_id);
-        }
-
-        // Add direct item
+        // Add item
         function addItemRow(panelId) {
             const container = document.getElementById(`items-container-${panelId}`);
             const supplierSelect = document.querySelector(`#panel-${panelId} .supplier-select`);
@@ -445,16 +297,6 @@
             addedProducts.get(panelId).add(parseInt(productId));
         }
 
-        function checkQuantityDiscrepancy(panelId, itemId, max, val) {
-            const row = document.getElementById(`item-${panelId}-${itemId}`);
-            row.classList.toggle('quantity-discrepancy', parseInt(val) > max);
-        }
-
-        function checkCostDiscrepancy(panelId, itemId, expected, actual) {
-            const row = document.getElementById(`item-${panelId}-${itemId}`);
-            row.classList.toggle('cost-discrepancy', parseFloat(actual) !== parseFloat(expected));
-        }
-
         function removeItem(panelId, itemId) {
             const row = document.getElementById(`item-${panelId}-${itemId}`);
             const select = row.querySelector('.product-select');
@@ -479,141 +321,136 @@
         });
 
         document.getElementById('confirmPostAll').addEventListener('click', function() {
-    const formData = new FormData();
-    let hasErrors = false;
-    
-    // Validate each panel before submitting
-    document.querySelectorAll('.stockin-panel').forEach((panel, i) => {
-        console.log(`Processing panel ${i}:`, panel);
-        
-        // Check if supplier is selected
-        const supplier = panel.querySelector('.supplier-select')?.value;
-        if (!supplier) {
-            alert(`Shipment #${i+1}: Please select a supplier`);
-            hasErrors = true;
-            return;
-        }
-
-        // Check if items exist
-        const items = panel.querySelectorAll('.item-row');
-        if (items.length === 0) {
-            alert(`Shipment #${i+1}: Please add at least one item`);
-            hasErrors = true;
-            return;
-        }
-
-        // Check each item
-        items.forEach((item, j) => {
-            const productId = item.querySelector('input[name*="product_id"], select[name*="product_id"]')?.value;
-            const quantity = item.querySelector('input[name*="quantity_received"]')?.value;
-            const cost = item.querySelector('input[name*="actual_unit_cost"]')?.value;
+            const formData = new FormData();
+            let hasErrors = false;
             
-            if (!productId || !quantity || !cost) {
-                alert(`Shipment #${i+1}, Item #${j+1}: Please fill all fields`);
-                hasErrors = true;
-            }
-        });
+            // Validate each panel before submitting
+            document.querySelectorAll('.stockin-panel').forEach((panel, i) => {
+                console.log(`Processing panel ${i}:`, panel);
+                
+                // Check if supplier is selected
+                const supplier = panel.querySelector('.supplier-select')?.value;
+                if (!supplier) {
+                    alert(`Shipment #${i+1}: Please select a supplier`);
+                    hasErrors = true;
+                    return;
+                }
 
-        if (hasErrors) return;
+                // Check if items exist
+                const items = panel.querySelectorAll('.item-row');
+                if (items.length === 0) {
+                    alert(`Shipment #${i+1}: Please add at least one item`);
+                    hasErrors = true;
+                    return;
+                }
 
-        // Build form data
-        const data = {};
-        const type = panel.querySelector('.receipt-type:checked')?.value;
-        if (type) data.stock_in_type = type;
-
-        const po = panel.querySelector('.purchase-order-select')?.value;
-        if (po) data.purchase_order_id = po;
-
-        if (supplier) data.supplier_id = supplier;
-
-        const ref = panel.querySelector('input[name*="reference_no"]')?.value;
-        if (ref) data.reference_no = ref;
-
-        const date = panel.querySelector('input[name*="stock_in_date"]')?.value;
-        if (date) data.stock_in_date = date;
-
-        const user = panel.querySelector('input[name*="received_by_user_id"]')?.value;
-        if (user) data.received_by_user_id = user;
-
-        const itemsData = [];
-        panel.querySelectorAll('.item-row').forEach(row => {
-            const item = {};
-            const pid = row.querySelector('input[name*="product_id"], select[name*="product_id"]')?.value;
-            const qty = row.querySelector('input[name*="quantity_received"]')?.value;
-            const cost = row.querySelector('input[name*="actual_unit_cost"]')?.value;
-            
-            if (pid && qty && cost) {
-                item.product_id = pid;
-                item.quantity_received = qty;
-                item.actual_unit_cost = cost;
-                itemsData.push(item);
-            }
-        });
-        data.items = itemsData;
-
-        // Add to FormData with debugging
-        console.log(`Panel ${i} data:`, data);
-        
-        Object.keys(data).forEach(k => {
-            if (k === 'items') {
-                data[k].forEach((it, j) => {
-                    Object.keys(it).forEach(key => {
-                        formData.append(`panels[${i}][${k}][${j}][${key}]`, it[key]);
-                    });
+                // Check each item
+                items.forEach((item, j) => {
+                    const productId = item.querySelector('input[name*="product_id"], select[name*="product_id"]')?.value;
+                    const quantity = item.querySelector('input[name*="quantity_received"]')?.value;
+                    const cost = item.querySelector('input[name*="actual_unit_cost"]')?.value;
+                    
+                    if (!productId || !quantity || !cost) {
+                        alert(`Shipment #${i+1}, Item #${j+1}: Please fill all fields`);
+                        hasErrors = true;
+                    }
                 });
-            } else {
-                formData.append(`panels[${i}][${k}]`, data[k]);
-            }
-        });
-    });
 
-    if (hasErrors) {
-        console.log('Validation errors found, stopping submission');
-        return;
-    }
+                if (hasErrors) return;
 
-    // Debug: Show what's being sent
-    console.log('FormData contents:');
-    for (let pair of formData.entries()) {
-        console.log(pair[0] + ': ' + pair[1]);
-    }
+                // Build form data
+                const data = {};
+                
+                if (supplier) data.supplier_id = supplier;
 
-    // Make the request with better error handling
-    fetch('{{ route("stock-ins.store") }}', {
-        method: 'POST',
-        body: formData,
-        headers: { 
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        
-        if (!response.ok) {
-            // Try to get error message from response
-            return response.text().then(text => {
-                console.error('Server response text:', text);
-                throw new Error(`HTTP ${response.status}: ${text}`);
+                const ref = panel.querySelector('input[name*="reference_no"]')?.value;
+                if (ref) data.reference_no = ref;
+
+                const date = panel.querySelector('input[name*="stock_in_date"]')?.value;
+                if (date) data.stock_in_date = date;
+
+                const user = panel.querySelector('input[name*="received_by_user_id"]')?.value;
+                if (user) data.received_by_user_id = user;
+
+                const itemsData = [];
+                panel.querySelectorAll('.item-row').forEach(row => {
+                    const item = {};
+                    const pid = row.querySelector('input[name*="product_id"], select[name*="product_id"]')?.value;
+                    const qty = row.querySelector('input[name*="quantity_received"]')?.value;
+                    const cost = row.querySelector('input[name*="actual_unit_cost"]')?.value;
+                    
+                    if (pid && qty && cost) {
+                        item.product_id = pid;
+                        item.quantity_received = qty;
+                        item.actual_unit_cost = cost;
+                        itemsData.push(item);
+                    }
+                });
+                data.items = itemsData;
+
+                // Add to FormData with debugging
+                console.log(`Panel ${i} data:`, data);
+                
+                Object.keys(data).forEach(k => {
+                    if (k === 'items') {
+                        data[k].forEach((it, j) => {
+                            Object.keys(it).forEach(key => {
+                                formData.append(`panels[${i}][${k}][${j}][${key}]`, it[key]);
+                            });
+                        });
+                    } else {
+                        formData.append(`panels[${i}][${k}]`, data[k]);
+                    }
+                });
             });
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Success response:', data);
-        if (data.success) {
-            alert('Posted successfully!');
-            window.location = "{{ route('stock-ins.index') }}";
-        } else {
-            alert('Error: ' + (data.message || 'Unknown error occurred'));
-        }
-    })
-    .catch(error => {
-        console.error('Full error details:', error);
-        alert('Network error details: ' + error.message);
-    });
-});
+
+            if (hasErrors) {
+                console.log('Validation errors found, stopping submission');
+                return;
+            }
+
+            // Debug: Show what's being sent
+            console.log('FormData contents:');
+            for (let pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
+
+            // Make the request with better error handling
+            fetch('{{ route("stock-ins.store") }}', {
+                method: 'POST',
+                body: formData,
+                headers: { 
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                if (!response.ok) {
+                    // Try to get error message from response
+                    return response.text().then(text => {
+                        console.error('Server response text:', text);
+                        throw new Error(`HTTP ${response.status}: ${text}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Success response:', data);
+                if (data.success) {
+                    alert('Posted successfully!');
+                    window.location = "{{ route('stock-ins.index') }}";
+                } else {
+                    alert('Error: ' + (data.message || 'Unknown error occurred'));
+                }
+            })
+            .catch(error => {
+                console.error('Full error details:', error);
+                alert('Network error details: ' + error.message);
+            });
+        });
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {

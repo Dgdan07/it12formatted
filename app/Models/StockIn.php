@@ -8,9 +8,7 @@ class StockIn extends Model
 {
     protected $fillable = [
         'stock_in_date',
-        'stock_in_type', 
         'reference_no',
-        'purchase_order_id',
         'received_by_user_id',
         'supplier_id',
         'status'
@@ -19,11 +17,6 @@ class StockIn extends Model
     protected $casts = [
         'stock_in_date' => 'datetime'
     ];
-
-    public function purchaseOrder()
-    {
-        return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');
-    }
 
     public function receivedBy()
     {

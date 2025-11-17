@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use App\Models\PurchaseOrder;
 use App\Models\StockIn;
 use App\Models\StockInItem;
 use App\Models\Supplier;
@@ -23,8 +22,8 @@ class StockInController extends Controller
                     'f_name' => 'Unknown',
                     'l_name' => 'User'
                 ]);
-            }, 
-            'purchaseOrder', 
+            },
+            'supplier',
             'items.product'
         ]);
 
@@ -32,22 +31,20 @@ class StockInController extends Controller
         if ($request->filled('search')) {
             $query->where(function($q) use ($request) {
                 $q->where('reference_no', 'like', '%' . $request->search . '%')
+                  ->orWhereHas('supplier', function($q) use ($request) {
+                      $q->where('supplier_name', 'like', '%' . $request->search . '%');
+                  })
                   ->orWhereHas('items.product', function($q) use ($request) {
                       $q->where('name', 'like', '%' . $request->search . '%');
                   });
             });
         }
 
-        // Type filter
-        if ($request->filled('type')) {
-            $query->where('stock_in_type', $request->type);
-        }
-
         // Sorting
         $sort = $request->get('sort', 'stock_in_date');
         $direction = $request->get('direction', 'desc');
         
-        $allowedSorts = ['id', 'stock_in_date', 'stock_in_type', 'reference_no', 'created_at'];
+        $allowedSorts = ['id', 'stock_in_date', 'reference_no', 'created_at'];
         if (in_array($sort, $allowedSorts)) {
             $query->orderBy($sort, $direction);
         } else {
@@ -59,24 +56,15 @@ class StockInController extends Controller
         return view('stock-in.index', compact('stockIns', 'sort', 'direction'));
     }
 
-    
-
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
         $suppliers = Supplier::active()->get();
-        $purchaseOrders = PurchaseOrder::whereIn('status', ['Ordered', 'Partially Received'])->get();
         $products = Product::active()->get();
         
-        return view('stock-in.create', compact('suppliers', 'purchaseOrders', 'products'));
-    }
-
-    public function getPurchaseOrderDetails($id)
-    {
-        $purchaseOrder = PurchaseOrder::with(['supplier', 'items.product'])->findOrFail($id);
-        return response()->json($purchaseOrder);
+        return view('stock-in.create', compact('suppliers', 'products'));
     }
 
     /**
@@ -90,7 +78,6 @@ class StockInController extends Controller
             // Validate the request structure
             $validated = $request->validate([
                 'panels' => 'required|array',
-                'panels.*.stock_in_type' => 'required|string|in:PO-Based,Direct Purchase',
                 'panels.*.supplier_id' => 'required|exists:suppliers,id',
                 'panels.*.reference_no' => 'required|string|max:255',
                 'panels.*.stock_in_date' => 'required|date',
@@ -105,14 +92,11 @@ class StockInController extends Controller
     
             // Process each panel
             foreach ($validated['panels'] as $panelData) {
-                // Your stock-in processing logic here
                 Log::info('Processing panel:', $panelData);
                 
-                // Example: Create stock in record
+                // Create stock in record
                 $stockIn = StockIn::create([
-                    'stock_in_type' => $panelData['stock_in_type'],
                     'supplier_id' => $panelData['supplier_id'],
-                    'purchase_order_id' => $panelData['purchase_order_id'] ?? null,
                     'reference_no' => $panelData['reference_no'],
                     'stock_in_date' => $panelData['stock_in_date'],
                     'received_by_user_id' => $panelData['received_by_user_id'],
@@ -121,10 +105,9 @@ class StockInController extends Controller
     
                 // Process items
                 foreach ($panelData['items'] as $itemData) {
-                    // Your item processing logic here
                     Log::info('Processing item:', $itemData);
                     
-                    // Example: Create stock in item
+                    // Create stock in item
                     StockInItem::create([
                         'stock_in_id' => $stockIn->id,
                         'product_id' => $itemData['product_id'],
@@ -164,7 +147,7 @@ class StockInController extends Controller
      */
     public function show(StockIn $stockIn)
     {
-        $stockIn->load(['receivedBy', 'purchaseOrder', 'items.product']);
+        $stockIn->load(['receivedBy', 'supplier', 'items.product']);
         return response()->json($stockIn);
     }
 
