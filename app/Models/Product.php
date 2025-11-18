@@ -16,19 +16,17 @@ class Product extends Model
         'category_id',
         'image_path',
         'manufacturer_barcode',
-        'price',
         'quantity_in_stock',
         'reorder_level',
-        'last_unit_cost',
         'default_supplier_id',
+        'latest_unit_cost', 
         'is_active',
         'date_disabled',
         'disabled_by_user_id',
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
-        'last_unit_cost' => 'decimal:2',
+        'latest_unit_cost' => 'decimal:2',
         'quantity_in_stock' => 'integer',
         'reorder_level' => 'integer',
         'is_active' => 'boolean',
@@ -37,11 +35,26 @@ class Product extends Model
         'updated_at' => 'datetime',
     ];
 
-    protected $appends = ['image_url']; // Add this line
+    protected $appends = ['image_url'];
 
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function productPrice()
+    {
+        return $this->hasOne(ProductPrice::class);
+    }
+
+    public function productPrices()
+    {
+        return $this->hasMany(ProductPrice::class)->orderBy('created_at', 'desc');
+    }
+  
+    public function getCurrentPriceAttribute()
+    {
+        return $this->productPrice ? $this->productPrice->retail_price : null;
     }
 
     public function defaultSupplier()
@@ -61,7 +74,6 @@ class Product extends Model
     public function suppliers()
     {
         return $this->belongsToMany(Supplier::class, 'product_suppliers')
-                    ->withPivot('default_unit_cost')
                     ->withTimestamps();
     }
 

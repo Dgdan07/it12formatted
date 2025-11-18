@@ -27,6 +27,11 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('stock_ins')
                 ->onDelete('set null');
+
+            $table->foreignId('updated_by_user_id')
+                ->nullable()
+                ->constrained('users')
+                ->onDelete('set null');
                 
             $table->timestamps();
         });

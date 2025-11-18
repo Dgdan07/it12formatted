@@ -36,18 +36,11 @@ class ProductController extends Controller
             $query->where('category_id', $request->category_id);
         }
 
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->min_price);
-        }
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->max_price);
-        }
-
         // Sorting
         $sort = $request->get('sort', 'id');
         $direction = $request->get('direction', 'asc');
         
-        $allowedSorts = ['id', 'name', 'price', 'quantity_in_stock', 'last_unit_cost', 'created_at'];
+        $allowedSorts = ['id', 'name', 'quantity_in_stock', 'created_at'];
         if (in_array($sort, $allowedSorts)) {
             $query->orderBy($sort, $direction);
         } else {
@@ -84,10 +77,8 @@ class ProductController extends Controller
                 'category_id' => 'required|exists:categories,id',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'manufacturer_barcode' => 'nullable|string|max:30|unique:products,manufacturer_barcode',
-                'price' => 'required|numeric|min:0',
                 'reorder_level' => 'required|integer|min:0',
                 'default_supplier_id' => 'required|exists:suppliers,id',
-                'last_unit_cost' => 'required|numeric|min:0',
                 'suppliers' => 'nullable|array',
                 'suppliers.*.id' => 'nullable|exists:suppliers,id', 
                 'suppliers.*.default_unit_cost' => 'nullable|numeric|min:0', 
@@ -126,10 +117,8 @@ class ProductController extends Controller
                 'category_id' => $request->category_id,
                 'image_path' => $imagePath,
                 'manufacturer_barcode' => $request->manufacturer_barcode,
-                'price' => $request->price,
                 'reorder_level' => $request->reorder_level,
                 'default_supplier_id' => $request->default_supplier_id,
-                'last_unit_cost' => $request->last_unit_cost,
                 'is_active' => true,
             ]);
 
@@ -191,10 +180,8 @@ class ProductController extends Controller
                 'category_id' => 'required|exists:categories,id',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'manufacturer_barcode' => 'nullable|string|max:30|unique:products,manufacturer_barcode,' . $product->id,
-                'price' => 'required|numeric|min:0',
                 'reorder_level' => 'required|integer|min:0',
                 'default_supplier_id' => 'required|exists:suppliers,id',
-                'last_unit_cost' => 'required|numeric|min:0',
                 'suppliers' => 'nullable|array',
                 'suppliers.*.id' => 'nullable|exists:suppliers,id',
                 'suppliers.*.default_unit_cost' => 'nullable|numeric|min:0',
@@ -228,10 +215,8 @@ class ProductController extends Controller
                 'category_id' => $request->category_id,
                 'image_path' => $imagePath,
                 'manufacturer_barcode' => $request->manufacturer_barcode,
-                'price' => $request->price,
                 'reorder_level' => $request->reorder_level,
                 'default_supplier_id' => $request->default_supplier_id,
-                'last_unit_cost' => $request->last_unit_cost,
             ]);
 
             // Sync suppliers - start with default supplier

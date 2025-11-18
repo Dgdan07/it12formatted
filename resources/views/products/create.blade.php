@@ -108,19 +108,9 @@
                         </div>
                     </div>
 
-                    <!-- Pricing & Inventory -->
+                    <!-- Inventory -->
                     <div class="col-md-6">
-                        <h5 class="mb-3"><i class="bi bi-currency-dollar me-2"></i>Pricing & Inventory</h5>
-                        
-                        <div class="mb-3">
-                            <label for="price" class="form-label">Selling Price <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text">₱</span>
-                                <input type="number" class="form-control" id="price" name="price" value="{{ old('price') }}" step="0.01" min="0" required
-                                title="The price at which this product is sold to the customer."  max="9999999.99">
-                            </div>
-                        </div>
-
+                        <h5 class="mb-3"><i class="bi bi-box me-2"></i>Inventory</h5>
                         <div class="mb-3">
                             <label for="reorder_level" class="form-label">Reorder Level <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" id="reorder_level" name="reorder_level" value="{{ old('reorder_level', 10) }}" min="0" max="99999" required>
@@ -132,7 +122,7 @@
                 <!-- Suppliers Section -->
                 <div class="row mt-4">
                     <div class="col-12">
-                        <h5 class="mb-3"><i class="bi bi-truck me-2"></i>Primary Supplier & Cost</h5>
+                        <h5 class="mb-3"><i class="bi bi-truck me-2"></i>Primary Supplier</h5>
                         
                         <div class="row supplier-item bg-light border-success g-0">
                             <div class="col-md-6 mb-3 pe-3">
@@ -151,15 +141,6 @@
                                     </button>
                                 </div>
                                 <div class="form-text">This supplier is mandatory for tracking initial cost.</div>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <label for="initial_unit_cost" class="form-label">Initial Unit Cost <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text">₱</span>
-                                    <input type="number" class="form-control" id="initial_unit_cost" name="last_unit_cost" value="{{ old('last_unit_cost') }}" step="0.01" min="0" max="9999999.99" required>
-                                </div>
-                                <div class="form-text">The cost from the primary supplier for the first stock-in.</div>
                             </div>
                         </div>
                 

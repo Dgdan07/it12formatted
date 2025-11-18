@@ -33,11 +33,10 @@ return new class extends Migration
                 ->on('suppliers')
                 ->onDelete('restrict');
                    
-            // Financial Data
-            $table->decimal('price', 10, 2); // Selling Price
+            // Inventory
             $table->integer('quantity_in_stock')->default(0);
             $table->integer('reorder_level');
-            $table->decimal('last_unit_cost', 10, 2)->nullable();
+            $table->decimal('latest_unit_cost', 10, 2)->nullable();
 
             // Soft Delete / Audit Fields
             $table->boolean('is_active')->default(true);

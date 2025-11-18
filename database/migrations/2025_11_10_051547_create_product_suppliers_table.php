@@ -20,8 +20,6 @@ return new class extends Migration
             $table->unsignedBigInteger('supplier_id');
             $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('cascade');
             
-            $table->decimal('default_unit_cost', 10, 2); // List Price
-            
             // Composite Index to prevent duplicate links
             $table->unique(['product_id', 'supplier_id']);
 

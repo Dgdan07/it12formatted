@@ -22,6 +22,10 @@
         color: #dc3545;
         cursor: pointer;
     }
+    .autofill-highlight {
+        background-color: #e8f5e8 !important;
+        border-color: #28a745 !important;
+    }
 </style>
 @endpush
 
@@ -37,28 +41,59 @@
                 > Process New Stock In
             </h2>
             <a href="{{ route('stock-ins.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
                 Back to Stock In
             </a>
         </div>
     </div>
 
-    <!-- Stock In Panels Container -->
-    <div id="stockin-panels-container">
-        <!-- Panels added dynamically -->
-    </div>
+    <!-- Single Stock In Panel -->
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <!-- Left Column -->
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Reference No. <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="reference_no" name="reference_no" placeholder="Invoice/Delivery Receipt Number" required>
+                    </div>
+                </div>
 
-    <!-- Add New Shipment Button -->
-    <div class="d-flex justify-content-center mb-4">
-        <button type="button" class="btn btn-outline-primary" id="add-new-shipment">
-            Process New Invoice
-        </button>
-    </div>
+                <!-- Right Column -->
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Stock In Date <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control" id="stock_in_date" name="stock_in_date" value="{{ now()->format('Y-m-d\TH:i') }}" max="{{ now()->format('Y-m-d\TH:i') }}" required>
+                    </div>
 
-    <!-- Post All Button -->
-    <div class="d-flex justify-content-end mt-4">
-        <button type="button" class="btn btn-success" id="post-all-shipments">
-            Post All Shipments
-        </button>
+                    <div class="mb-3">
+                        <label class="form-label">Received By</label>
+                        <input type="text" class="form-control" value="{{ session('user_name') ?? 'Current User' }}" readonly>
+                        <input type="hidden" id="received_by_user_id" name="received_by_user_id" value="{{ session('user_id') ?? '' }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items Section -->
+            <div class="mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6>Items</h6>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-item">
+                        <i class="bi bi-plus-circle me-1"></i> Add Item
+                    </button>
+                </div>
+                <div id="items-container">
+                    <!-- Items will be added here dynamically -->
+                </div>
+            </div>
+
+            <!-- Post Button -->
+            <div class="d-flex justify-content-end mt-4">
+                <button type="button" class="btn btn-success" id="post-shipment">
+                    Post Shipment
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Confirmation Modal -->
@@ -67,14 +102,14 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        Confirm all stock in
+                        Confirm Stock In
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center">
                     <i class="bi bi-box-seam text-warning" style="font-size: 3rem;"></i>
-                    <h5 class="mt-3">Are you sure you want to post all pending shipments?</h5>
-                    <p class="text-muted">This action will permanently update inventory.</p>
+                    <h5 class="mt-3">Are you sure you want to post this shipment?</h5>
+                    <p class="text-muted">This action will permanently update inventory and pricing.</p>
                     <div class="alert alert-warning mt-3">
                         <strong>Warning:</strong> This action cannot be undone.
                     </div>
@@ -82,7 +117,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success" id="confirmPostAll">Confirm and Post</button>
+                    <button type="button" class="btn btn-success" id="confirmPost">Confirm and Post</button>
                 </div>
             </div>
         </div>
@@ -90,332 +125,242 @@
 
     @push('scripts')
     <script>
-        let panelCount = 0;
-        const addedProducts = new Map(); // Track products per panel
+        let itemCount = 0;
+        const addedProducts = new Set();
 
-        // Add new shipment panel
-        document.getElementById('add-new-shipment').addEventListener('click', function() {
-            panelCount++;
-            addedProducts.set(panelCount, new Set());
+        // Product data from Laravel
+        const PRODUCTS_DATA = @php 
+    echo json_encode($products->map(function($product) {
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'latest_unit_cost' => $product->latest_unit_cost,
+            'default_supplier_id' => $product->default_supplier_id,
+            'default_supplier_name' => $product->defaultSupplier ? $product->defaultSupplier->supplier_name : null,
+            'current_retail_price' => $product->productPrice ? $product->productPrice->retail_price : null
+        ];
+    }));
+@endphp;
 
-            const container = document.getElementById('stockin-panels-container');
+        // Suppliers data from Laravel
+        const SUPPLIERS_DATA = @json($suppliers->map(function($supplier) {
+            return [
+                'id' => $supplier->id,
+                'supplier_name' => $supplier->supplier_name
+            ];
+        }));
 
-            const panelHtml = `
-                <div class="stockin-panel" id="panel-${panelCount}">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0">Shipment #${panelCount}</h5>
-                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removePanel(${panelCount})" ${panelCount === 1 ? 'disabled' : ''}>
-                            Remove
-                        </button>
-                    </div>
+        // Add item row
+        function addItemRow(productId = '') {
+            itemCount++;
+            const container = document.getElementById('items-container');
 
+            const itemHtml = `
+                <div class="item-row" id="item-${itemCount}">
                     <div class="row">
-                        <!-- Left Column -->
-                        <div class="col-md-6">
+                        <!-- Product Selection -->
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">Product <span class="text-danger">*</span></label>
+                                <select class="form-select product-select" name="items[${itemCount}][product_id]" required onchange="handleProductChange(${itemCount}, this.value)">
+                                    <option value="">Select Product</option>
+                                    @foreach($products as $product)
+                                        <option value="{{ $product->id }}" data-cost="{{ $product->latest_unit_cost }}" data-supplier="{{ $product->default_supplier_id }}" data-price="{{ $product->productPrice ? $product->productPrice->retail_price : '' }}">
+                                            {{ $product->name }} ({{ $product->sku }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Supplier Selection -->
+                        <div class="col-md-3">
                             <div class="mb-3">
                                 <label class="form-label">Supplier <span class="text-danger">*</span></label>
-                                <select class="form-select supplier-select" name="panels[${panelCount}][supplier_id]" required onchange="handleSupplierChange(${panelCount}, this.value)">
+                                <select class="form-select supplier-select" name="items[${itemCount}][supplier_id]" required>
                                     <option value="">Select Supplier</option>
                                     @foreach($suppliers as $supplier)
                                         <option value="{{ $supplier->id }}">{{ $supplier->supplier_name }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                            
-                            <!-- IMPORTANT NOTE -->
-                            <div class="alert alert-info mb-3">
-                                <div class="d-flex">
-                                    <div class="me-3">
-                                        <i class="bi bi-info-circle" style="font-size: 1.5rem;"></i>
-                                    </div>
-                                    <div>
-                                        <strong>Important:</strong> Each Stock In transaction is for <strong>one supplier only</strong>.
-                                        <br>
-                                        <small class="text-muted">
-                                            If you have products from multiple suppliers, create separate Stock In transactions for each supplier.
-                                        </small>
-                                    </div>
+                        </div>
+
+                        <!-- Quantity -->
+                        <div class="col-md-1">
+                            <div class="mb-3">
+                                <label class="form-label">Qty <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="items[${itemCount}][quantity_received]" min="1" required>
+                            </div>
+                        </div>
+
+                        <!-- Unit Cost -->
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label class="form-label">Unit Cost <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₱</span>
+                                    <input type="number" class="form-control unit-cost" name="items[${itemCount}][actual_unit_cost]" step="0.01" min="0" required>
                                 </div>
                             </div>
+                        </div>
 
+                        <!-- Retail Price -->
+                        <div class="col-md-2">
                             <div class="mb-3">
-                                <label class="form-label">Reference No. <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="panels[${panelCount}][reference_no]" placeholder="Invoice/Delivery Receipt Number" required>
+                                <label class="form-label">Retail Price <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₱</span>
+                                    <input type="number" class="form-control retail-price" name="items[${itemCount}][retail_price]" step="0.01" min="0" required>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Right Column -->
-                        <div class="col-md-6">
+                        <!-- Remove Button -->
+                        <div class="col-md-1">
                             <div class="mb-3">
-                                <label class="form-label">Stock In Date <span class="text-danger">*</span></label>
-                                <input type="datetime-local" class="form-control" name="panels[${panelCount}][stock_in_date]" value="{{ now()->format('Y-m-d\TH:i') }}" max="{{ now()->format('Y-m-d\TH:i') }}" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Received By</label>
-                                <input type="text" class="form-control" value="{{ session('user_name') ?? 'Current User' }}" readonly>
-                                <input type="hidden" name="panels[${panelCount}][received_by_user_id]" value="{{ session('user_id') ?? '' }}">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="button" class="btn btn-outline-danger w-100" onclick="removeItem(${itemCount})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Items Section -->
-                    <div class="mt-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6>Items</h6>
-                            <button type="button" class="btn btn-outline-primary btn-sm" id="add-item-${panelCount}" onclick="addItemRow(${panelCount})">
-                                Add Item
-                            </button>
-                        </div>
-                        <div id="items-container-${panelCount}"></div>
                     </div>
                 </div>
             `;
 
-            container.insertAdjacentHTML('beforeend', panelHtml);
-        });
+            container.insertAdjacentHTML('beforeend', itemHtml);
 
-        // Handle supplier changes
-        function handleSupplierChange(panelId, supplierId) {
-            const itemsContainer = document.getElementById(`items-container-${panelCount}`);
-            const productSelects = itemsContainer.querySelectorAll('.product-select');
-            
-            if (supplierId) {
-                // Filter products based on selected supplier
-                filterProductsBySupplier(panelId, supplierId);
-            } else {
-                // Reset all product selects to show all products
-                productSelects.forEach(select => {
-                    select.innerHTML = `
-                        <option value="">Select Product</option>
-                        @foreach($products as $product)
-                            <option value="{{ $product->id }}">{{ $product->name }}</option>
-                        @endforeach
-                    `;
-                });
+            // Auto-select product if provided
+            if (productId) {
+                const select = document.querySelector(`#item-${itemCount} .product-select`);
+                select.value = productId;
+                handleProductChange(itemCount, productId);
             }
         }
 
-        // Filter products by supplier
-        function filterProductsBySupplier(panelId, supplierId) {
-            const itemsContainer = document.getElementById(`items-container-${panelId}`);
-            const productSelects = itemsContainer.querySelectorAll('.product-select');
-            
-            // Fetch products for this supplier
-            fetch(`/api/suppliers/${supplierId}/products`)
-                .then(response => response.json())
-                .then(products => {
-                    productSelects.forEach(select => {
-                        const currentValue = select.value;
-                        select.innerHTML = '<option value="">Select Product</option>';
-                        
-                        products.forEach(product => {
-                            const option = document.createElement('option');
-                            option.value = product.id;
-                            option.textContent = product.name;
-                            select.appendChild(option);
-                        });
-                        
-                        // Restore previous selection if it's still valid
-                        if (currentValue && products.some(p => p.id == currentValue)) {
-                            select.value = currentValue;
-                        } else {
-                            select.value = '';
-                        }
-                    });
-                })
-                .catch(error => {
-                    console.error('Error fetching supplier products:', error);
-                    // Fallback to all products if API fails
-                    productSelects.forEach(select => {
-                        select.innerHTML = `
-                            <option value="">Select Product</option>
-                            @foreach($products as $product)
-                                <option value="{{ $product->id }}">{{ $product->name }}</option>
-                            @endforeach
-                        `;
-                    });
-                });
-        }
-
-        // Add item
-        function addItemRow(panelId) {
-            const container = document.getElementById(`items-container-${panelId}`);
-            const supplierSelect = document.querySelector(`#panel-${panelId} .supplier-select`);
-            const supplierId = supplierSelect ? supplierSelect.value : '';
-            
-            if (!supplierId) {
-                alert('Please select a supplier first before adding products.');
-                return;
-            }
-
-            const itemId = Date.now();
-
-            container.insertAdjacentHTML('beforeend', `
-                <div class="item-row" id="item-${panelId}-${itemId}">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <select class="form-select product-select" name="panels[${panelId}][items][${itemId}][product_id]" required onchange="checkDuplicateProduct(${panelId}, this.value, ${itemId})">
-                                <option value="">Select Product</option>
-                                <!-- Products will be filtered by JavaScript -->
-                                @foreach($products as $product)
-                                    <option value="{{ $product->id }}">{{ $product->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <input type="number" class="form-control" name="panels[${panelId}][items][${itemId}][quantity_received]" min="1" required>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="input-group">
-                                <span class="input-group-text">₱</span>
-                                <input type="number" class="form-control" name="panels[${panelId}][items][${itemId}][actual_unit_cost]" step="0.01" min="0" required>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="button" class="btn btn-outline-danger w-100" onclick="removeItem(${panelId}, ${itemId})">
-                                Remove
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `);
-            
-            // Filter products for the new row
-            if (supplierId) {
-                filterProductsBySupplier(panelId, supplierId);
-            }
-        }
-
-        function checkDuplicateProduct(panelId, productId, itemId) {
+        // Handle product selection change
+        function handleProductChange(itemId, productId) {
             if (!productId) return;
-            if (addedProducts.get(panelId).has(parseInt(productId))) {
-                alert('Product already added.');
-                document.querySelector(`#item-${panelId}-${itemId} .product-select`).value = '';
+
+            // Check for duplicate product
+            if (addedProducts.has(parseInt(productId))) {
+                alert('This product has already been added to the shipment.');
+                document.querySelector(`#item-${itemId} .product-select`).value = '';
                 return;
             }
-            addedProducts.get(panelId).add(parseInt(productId));
+            addedProducts.add(parseInt(productId));
+
+            // Find product data
+            const product = PRODUCTS_DATA.find(p => p.id == productId);
+            if (!product) return;
+
+            const itemRow = document.getElementById(`item-${itemId}`);
+            
+            // Auto-fill supplier
+            const supplierSelect = itemRow.querySelector('.supplier-select');
+            if (product.default_supplier_id) {
+                supplierSelect.value = product.default_supplier_id;
+            }
+
+            // Auto-fill unit cost
+            const unitCostInput = itemRow.querySelector('.unit-cost');
+            if (product.latest_unit_cost) {
+                unitCostInput.value = product.latest_unit_cost;
+                unitCostInput.classList.add('autofill-highlight');
+                setTimeout(() => unitCostInput.classList.remove('autofill-highlight'), 2000);
+            }
+
+            // Auto-fill retail price
+            const retailPriceInput = itemRow.querySelector('.retail-price');
+            if (product.current_retail_price) {
+                retailPriceInput.value = product.current_retail_price;
+                retailPriceInput.classList.add('autofill-highlight');
+                setTimeout(() => retailPriceInput.classList.remove('autofill-highlight'), 2000);
+            }
         }
 
-        function removeItem(panelId, itemId) {
-            const row = document.getElementById(`item-${panelId}-${itemId}`);
+        function removeItem(itemId) {
+            const row = document.getElementById(`item-${itemId}`);
             const select = row.querySelector('.product-select');
-            if (select?.value) addedProducts.get(panelId).delete(parseInt(select.value));
+            if (select?.value) addedProducts.delete(parseInt(select.value));
             row.remove();
         }
 
-        function removePanel(panelId) {
-            document.getElementById(`panel-${panelId}`).remove();
-            addedProducts.delete(panelId);
-        }
+        // Add item button
+        document.getElementById('add-item').addEventListener('click', () => addItemRow());
 
-        // Post All
-        document.getElementById('post-all-shipments').addEventListener('click', function() {
-            const panels = document.querySelectorAll('.stockin-panel');
-            if (!panels.length) return alert('No shipments.');
-
-            const totalItems = [...panels].reduce((sum, p) => sum + p.querySelectorAll('.item-row').length, 0);
-            document.getElementById('confirmationSummary').innerHTML = `<strong>${panels.length} shipment(s), ${totalItems} item(s)</strong>`;
-
-            new bootstrap.Modal(document.getElementById('confirmationModal')).show();
-        });
-
-        document.getElementById('confirmPostAll').addEventListener('click', function() {
-            const formData = new FormData();
-            let hasErrors = false;
-            
-            // Validate each panel before submitting
-            document.querySelectorAll('.stockin-panel').forEach((panel, i) => {
-                console.log(`Processing panel ${i}:`, panel);
-                
-                // Check if supplier is selected
-                const supplier = panel.querySelector('.supplier-select')?.value;
-                if (!supplier) {
-                    alert(`Shipment #${i+1}: Please select a supplier`);
-                    hasErrors = true;
-                    return;
-                }
-
-                // Check if items exist
-                const items = panel.querySelectorAll('.item-row');
-                if (items.length === 0) {
-                    alert(`Shipment #${i+1}: Please add at least one item`);
-                    hasErrors = true;
-                    return;
-                }
-
-                // Check each item
-                items.forEach((item, j) => {
-                    const productId = item.querySelector('input[name*="product_id"], select[name*="product_id"]')?.value;
-                    const quantity = item.querySelector('input[name*="quantity_received"]')?.value;
-                    const cost = item.querySelector('input[name*="actual_unit_cost"]')?.value;
-                    
-                    if (!productId || !quantity || !cost) {
-                        alert(`Shipment #${i+1}, Item #${j+1}: Please fill all fields`);
-                        hasErrors = true;
-                    }
-                });
-
-                if (hasErrors) return;
-
-                // Build form data
-                const data = {};
-                
-                if (supplier) data.supplier_id = supplier;
-
-                const ref = panel.querySelector('input[name*="reference_no"]')?.value;
-                if (ref) data.reference_no = ref;
-
-                const date = panel.querySelector('input[name*="stock_in_date"]')?.value;
-                if (date) data.stock_in_date = date;
-
-                const user = panel.querySelector('input[name*="received_by_user_id"]')?.value;
-                if (user) data.received_by_user_id = user;
-
-                const itemsData = [];
-                panel.querySelectorAll('.item-row').forEach(row => {
-                    const item = {};
-                    const pid = row.querySelector('input[name*="product_id"], select[name*="product_id"]')?.value;
-                    const qty = row.querySelector('input[name*="quantity_received"]')?.value;
-                    const cost = row.querySelector('input[name*="actual_unit_cost"]')?.value;
-                    
-                    if (pid && qty && cost) {
-                        item.product_id = pid;
-                        item.quantity_received = qty;
-                        item.actual_unit_cost = cost;
-                        itemsData.push(item);
-                    }
-                });
-                data.items = itemsData;
-
-                // Add to FormData with debugging
-                console.log(`Panel ${i} data:`, data);
-                
-                Object.keys(data).forEach(k => {
-                    if (k === 'items') {
-                        data[k].forEach((it, j) => {
-                            Object.keys(it).forEach(key => {
-                                formData.append(`panels[${i}][${k}][${j}][${key}]`, it[key]);
-                            });
-                        });
-                    } else {
-                        formData.append(`panels[${i}][${k}]`, data[k]);
-                    }
-                });
-            });
-
-            if (hasErrors) {
-                console.log('Validation errors found, stopping submission');
+        // Post Shipment
+        document.getElementById('post-shipment').addEventListener('click', function() {
+            const items = document.querySelectorAll('.item-row');
+            if (items.length === 0) {
+                alert('Please add at least one item.');
                 return;
             }
 
-            // Debug: Show what's being sent
-            console.log('FormData contents:');
-            for (let pair of formData.entries()) {
-                console.log(pair[0] + ': ' + pair[1]);
+            const referenceNo = document.getElementById('reference_no').value;
+            if (!referenceNo) {
+                alert('Please enter a reference number.');
+                return;
             }
 
-            // Make the request with better error handling
+            // Build confirmation summary
+            let summary = `<strong>Reference:</strong> ${referenceNo}<br>`;
+            summary += `<strong>Items:</strong> ${items.length}<br><br>`;
+            
+            items.forEach((item, index) => {
+                const productSelect = item.querySelector('.product-select');
+                const supplierSelect = item.querySelector('.supplier-select');
+                const quantity = item.querySelector('input[name*="quantity_received"]').value;
+                const cost = item.querySelector('.unit-cost').value;
+                const price = item.querySelector('.retail-price').value;
+                
+                if (productSelect.value && supplierSelect.value) {
+                    const productName = productSelect.options[productSelect.selectedIndex].text;
+                    const supplierName = supplierSelect.options[supplierSelect.selectedIndex].text;
+                    summary += `<strong>Item ${index + 1}:</strong> ${productName}<br>`;
+                    summary += `Supplier: ${supplierName} | Qty: ${quantity} | Cost: ₱${cost} | Price: ₱${price}<br><br>`;
+                }
+            });
+
+            document.getElementById('confirmationSummary').innerHTML = summary;
+            new bootstrap.Modal(document.getElementById('confirmationModal')).show();
+        });
+
+        document.getElementById('confirmPost').addEventListener('click', function() {
+            const formData = new FormData();
+            let hasErrors = false;
+
+            // Basic data
+            formData.append('reference_no', document.getElementById('reference_no').value);
+            formData.append('stock_in_date', document.getElementById('stock_in_date').value);
+            formData.append('received_by_user_id', document.getElementById('received_by_user_id').value);
+
+            // Items data
+            document.querySelectorAll('.item-row').forEach((item, index) => {
+                const productId = item.querySelector('.product-select').value;
+                const supplierId = item.querySelector('.supplier-select').value;
+                const quantity = item.querySelector('input[name*="quantity_received"]').value;
+                const actualUnitCost = item.querySelector('.unit-cost').value;
+                const retailPrice = item.querySelector('.retail-price').value;
+
+                if (!productId || !supplierId || !quantity || !actualUnitCost || !retailPrice) {
+                    alert(`Item ${index + 1} has missing fields.`);
+                    hasErrors = true;
+                    return;
+                }
+
+                formData.append(`items[${index}][product_id]`, productId);
+                formData.append(`items[${index}][supplier_id]`, supplierId);
+                formData.append(`items[${index}][quantity_received]`, quantity);
+                formData.append(`items[${index}][actual_unit_cost]`, actualUnitCost);
+                formData.append(`items[${index}][retail_price]`, retailPrice);
+            });
+
+            if (hasErrors) return;
+
+            // Submit the form
             fetch('{{ route("stock-ins.store") }}', {
                 method: 'POST',
                 body: formData,
@@ -424,37 +369,24 @@
                     'Accept': 'application/json'
                 }
             })
-            .then(response => {
-                console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers);
-                
-                if (!response.ok) {
-                    // Try to get error message from response
-                    return response.text().then(text => {
-                        console.error('Server response text:', text);
-                        throw new Error(`HTTP ${response.status}: ${text}`);
-                    });
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                console.log('Success response:', data);
                 if (data.success) {
-                    alert('Posted successfully!');
+                    alert('Stock In posted successfully!');
                     window.location = "{{ route('stock-ins.index') }}";
                 } else {
                     alert('Error: ' + (data.message || 'Unknown error occurred'));
                 }
             })
             .catch(error => {
-                console.error('Full error details:', error);
-                alert('Network error details: ' + error.message);
+                console.error('Error:', error);
+                alert('Network error: ' + error.message);
             });
         });
 
-        // Initialize
+        // Initialize with one empty row
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('add-new-shipment').click();
+            addItemRow();
         });
     </script>
     @endpush

@@ -163,17 +163,13 @@
                                     <span class="fw-semibold" id="viewReferenceNo">N/A</span>
                                 </div>
                                 <div class="list-group-item d-flex justify-content-between px-0">
-                                    <small class="text-muted">Supplier:</small>
-                                    <span class="fw-semibold" id="viewSupplier"></span>
+                                    <small class="text-muted">Received By:</small>
+                                    <span class="fw-semibold" id="viewReceivedBy"></span>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="list-group list-group-flush">
-                                <div class="list-group-item d-flex justify-content-between px-0">
-                                    <small class="text-muted">Received By:</small>
-                                    <span class="fw-semibold" id="viewReceivedBy"></span>
-                                </div>
                                 <div class="list-group-item d-flex justify-content-between px-0">
                                     <small class="text-muted">Total Items:</small>
                                     <span class="fw-semibold" id="viewTotalItems"></span>
@@ -198,6 +194,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Product</th>
+                                        <th>Supplier</th>
                                         <th>Quantity</th>
                                         <th>Unit Cost</th>
                                         <th>Total Cost</th>
@@ -230,7 +227,6 @@
                         document.getElementById('viewStockInId').textContent = stockIn.id;
                         document.getElementById('viewStockInDate').textContent = new Date(stockIn.stock_in_date).toLocaleString();
                         document.getElementById('viewReferenceNo').textContent = stockIn.reference_no || 'N/A';
-                        document.getElementById('viewSupplier').textContent = stockIn.supplier ? stockIn.supplier.supplier_name : 'N/A';
                         document.getElementById('viewReceivedBy').textContent = stockIn.received_by.full_name;
                         document.getElementById('viewTotalItems').textContent = stockIn.items.length;
                         
@@ -250,6 +246,7 @@
                             const totalCost = item.quantity_received * item.actual_unit_cost;
                             row.innerHTML = `
                                 <td>${item.product.name}</td>
+                                <td>${item.supplier ? item.supplier.supplier_name : 'N/A'}</td> 
                                 <td>${item.quantity_received}</td>
                                 <td>₱${parseFloat(item.actual_unit_cost).toFixed(2)}</td>
                                 <td>₱${parseFloat(totalCost).toFixed(2)}</td>

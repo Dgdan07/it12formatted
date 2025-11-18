@@ -18,10 +18,8 @@ class ProductSeeder extends Seeder
 
         // 1. Get Category IDs and Prefixes (Assumes CategorySeeder ran first)
         $categories = DB::table('categories')->pluck('id', 'sku_prefix')->toArray();
-        // Example: $categories['FSTNR'] = 1, $categories['ELEC'] = 5, etc.
 
         // 2. Get Supplier IDs (Assumes SupplierSeeder ran first)
-        // We will assign default_supplier_id 1 to all products for simplicity.
         $default_supplier_id = 1;
 
         $products = [
@@ -31,12 +29,10 @@ class ProductSeeder extends Seeder
                 'name' => 'Wood Screw 1 inch (per piece)',
                 'description' => 'Flat head wood screws, 1-inch length, zinc coating.',
                 'category_id' => $categories['FSTNR'],
-                'manufacturer_barcode' => null, // No barcode
+                'manufacturer_barcode' => null,
                 'default_supplier_id' => $default_supplier_id, 
-                'price' => 1.50,
-                'quantity_in_stock' => 5000,
+                'quantity_in_stock' => 0, // Will be updated by stock-in
                 'reorder_level' => 1000,
-                'last_unit_cost' => 0.75,
             ],
             [
                 'sku' => 'FSTNR-00002',
@@ -45,10 +41,8 @@ class ProductSeeder extends Seeder
                 'category_id' => $categories['FSTNR'],
                 'manufacturer_barcode' => null,
                 'default_supplier_id' => $default_supplier_id, 
-                'price' => 5.00,
-                'quantity_in_stock' => 2000,
+                'quantity_in_stock' => 0, // Will be updated by stock-in
                 'reorder_level' => 500,
-                'last_unit_cost' => 2.50,
             ],
 
             // --- ELECTRICAL (ELEC - ID 5) ---
@@ -57,12 +51,10 @@ class ProductSeeder extends Seeder
                 'name' => 'Electrical Wire 14 AWG (per meter)',
                 'description' => 'Solid copper 14 gauge electrical wire, sold by the meter.',
                 'category_id' => $categories['ELEC'],
-                'manufacturer_barcode' => null, // No barcode
+                'manufacturer_barcode' => null,
                 'default_supplier_id' => $default_supplier_id, 
-                'price' => 35.00,
-                'quantity_in_stock' => 500, // 500 meters
+                'quantity_in_stock' => 0, // Will be updated by stock-in
                 'reorder_level' => 100,
-                'last_unit_cost' => 18.00,
             ],
             [
                 'sku' => 'ELEC-00002',
@@ -71,10 +63,8 @@ class ProductSeeder extends Seeder
                 'category_id' => $categories['ELEC'],
                 'manufacturer_barcode' => null,
                 'default_supplier_id' => $default_supplier_id, 
-                'price' => 120.00,
-                'quantity_in_stock' => 85,
+                'quantity_in_stock' => 0, // Will be updated by stock-in
                 'reorder_level' => 20,
-                'last_unit_cost' => 60.00,
             ],
             
             // --- HAND TOOLS (HNDTL - ID 2) ---
@@ -85,10 +75,8 @@ class ProductSeeder extends Seeder
                 'category_id' => $categories['HNDTL'],
                 'manufacturer_barcode' => null,
                 'default_supplier_id' => $default_supplier_id, 
-                'price' => 250.00,
-                'quantity_in_stock' => 40,
+                'quantity_in_stock' => 0, // Will be updated by stock-in
                 'reorder_level' => 10,
-                'last_unit_cost' => 125.00,
             ],
         ];
 
@@ -104,5 +92,78 @@ class ProductSeeder extends Seeder
         }, $products);
 
         DB::table('products')->insert($products);
+
+        // Now create stock-in records for these products
+        $this->createStockInRecords();
+    }
+
+    /**
+     * Create stock-in records for the seeded products
+     */
+    private function createStockInRecords(): void
+    {
+        $now = Carbon::now();
+        $default_supplier_id = 1;
+        $received_by_user_id = 1; // Assuming user ID 1 exists
+
+        // Get all product IDs we just created
+        $productIds = DB::table('products')->pluck('id', 'sku')->toArray();
+
+        // Define stock-in data with unit costs and retail prices
+        $stockInData = [
+            // Product data: [quantity, unit_cost, retail_price]
+            'FSTNR-00001' => [5000, 0.75, 1.50],    // Wood Screw
+            'FSTNR-00002' => [2000, 2.50, 5.00],    // Hex Bolt
+            'ELEC-00001'  => [500, 18.00, 36.00],   // Electrical Wire
+            'ELEC-00002'  => [200, 60.00, 120.00],  // Wall Outlet Switch
+            'HNDTL-00001' => [100, 125.00, 250.00], // Measuring Tape
+        ];
+
+        // Create stock-in header
+        $stockInId = DB::table('stock_ins')->insertGetId([
+            'stock_in_date' => $now,
+            'reference_no' => 'SEED-001',
+            'received_by_user_id' => $received_by_user_id,
+            'status' => 'completed',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        // Create stock-in items and product prices
+        foreach ($stockInData as $sku => $data) {
+            list($quantity, $unitCost, $retailPrice) = $data;
+            
+            $productId = $productIds[$sku];
+
+            // Create stock-in item
+            DB::table('stock_in_items')->insert([
+                'stock_in_id' => $stockInId,
+                'product_id' => $productId,
+                'supplier_id' => $default_supplier_id,
+                'quantity_received' => $quantity,
+                'actual_unit_cost' => $unitCost,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            // Create product price
+            DB::table('product_prices')->insert([
+                'product_id' => $productId,
+                'retail_price' => $retailPrice,
+                'stock_in_id' => $stockInId,
+                'updated_by_user_id' => $received_by_user_id, 
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            // Update product quantity_in_stock
+            DB::table('products')
+                ->where('id', $productId)
+                ->update([
+                    'quantity_in_stock' => $quantity,
+                    'latest_unit_cost' => $unitCost, 
+                    'updated_at' => $now,
+                ]);
+        }
     }
 }

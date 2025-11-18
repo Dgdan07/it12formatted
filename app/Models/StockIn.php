@@ -10,7 +10,6 @@ class StockIn extends Model
         'stock_in_date',
         'reference_no',
         'received_by_user_id',
-        'supplier_id',
         'status'
     ];
 
@@ -26,11 +25,6 @@ class StockIn extends Model
             'l_name' => 'User',
             'full_name' => 'Unknown User'
         ]);
-    }
-    
-    public function supplier()
-    {
-        return $this->belongsTo(Supplier::class);
     }
 
     public function items()

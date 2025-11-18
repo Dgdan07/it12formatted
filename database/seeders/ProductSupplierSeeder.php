@@ -26,7 +26,6 @@ class ProductSupplierSeeder extends Seeder
             $productSuppliers[] = [
                 'product_id' => $product->id,
                 'supplier_id' => $product->default_supplier_id, // This is 1 for all products
-                'default_unit_cost' => $product->last_unit_cost,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];

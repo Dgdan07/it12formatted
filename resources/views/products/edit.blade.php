@@ -116,19 +116,10 @@
                         </div>
                     </div>
 
-                    <!-- Pricing & Inventory -->
+                    <!-- Inventory -->
                     <div class="col-md-6">
-                        <h5 class="mb-3"><i class="bi bi-currency-dollar me-2"></i>Pricing & Inventory</h5>
+                        <h5 class="mb-3"><i class="bi bi-box me-2"></i>Inventory</h5>
                         
-                        <div class="mb-3">
-                            <label for="price" class="form-label">Selling Price <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text">₱</span>
-                                <input type="number" class="form-control" id="price" name="price" value="{{ old('price', $product->price) }}" step="0.01" min="0" required
-                                title="The price at which this product is sold to the customer."  max="9999999.99">
-                            </div>
-                        </div>
-
                         <div class="mb-3">
                             <label for="reorder_level" class="form-label">Reorder Level <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" id="reorder_level" name="reorder_level" value="{{ old('reorder_level', $product->reorder_level) }}" min="0" max="99999" required>
@@ -137,7 +128,6 @@
 
                         <!-- Hidden field for primary supplier -->
                         <input type="hidden" id="default_supplier_id" name="default_supplier_id" value="{{ old('default_supplier_id', $product->default_supplier_id) }}">
-                        <input type="hidden" id="last_unit_cost" name="last_unit_cost" value="{{ old('last_unit_cost', $product->last_unit_cost) }}">
                     </div>
                 </div>
 
@@ -159,10 +149,6 @@
                                                 Not set
                                             @endif
                                         </span>
-                                    </div>
-                                    <div>
-                                        <strong>Unit Cost:</strong>
-                                        <span id="primarySupplierCost" class="ms-2">₱{{ number_format($product->last_unit_cost, 2) }}</span>
                                     </div>
                                 </div>
                                 <div class="form-text text-muted mt-1">
@@ -249,11 +235,9 @@
         let currentSupplierModalContext = null;
     
         // Set primary supplier
-        function setPrimarySupplier(supplierId, supplierName, unitCost) {
+        function setPrimarySupplier(supplierId, supplierName) {
             document.getElementById('default_supplier_id').value = supplierId;
-            document.getElementById('last_unit_cost').value = unitCost;
             document.getElementById('primarySupplierName').textContent = supplierName;
-            document.getElementById('primarySupplierCost').textContent = '₱' + parseFloat(unitCost).toFixed(2);
     
             document.querySelectorAll('.set-primary-btn').forEach(btn => {
                 if (btn.dataset.supplierId == supplierId) {
@@ -287,14 +271,14 @@
         });
     
         // Add supplier row
-        function addSupplierRow(supplierId = '', unitCost = '', isPrimary = false) {
+        function addSupplierRow(supplierId = '', isPrimary = false) {
             supplierCount++;
             const container = document.getElementById('suppliers-container');
     
             const supplierHtml = `
                 <div class="supplier-item" id="supplier-${supplierCount}">
                     <div class="row">
-                        <div class="col-md-5">
+                        <div class="col-md-7">
                             <div class="mb-3">
                                 <label class="form-label">Supplier <span class="text-danger">*</span></label>
                                 <div class="input-group">
@@ -307,19 +291,6 @@
                                             title="Quickly create a new supplier">
                                         <i class="bi bi-plus-lg"></i>
                                     </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label">Unit Cost <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text">₱</span>
-                                    <input type="number" class="form-control unit-cost-input"
-                                           name="suppliers[${supplierCount}][default_unit_cost]"
-                                           value="${unitCost}"
-                                           step="0.01" min="0"
-                                           onchange="updateSetPrimaryButton(${supplierCount})">
                                 </div>
                             </div>
                         </div>
@@ -371,21 +342,11 @@
                 newSelect.add(new Option(opt.text, opt.value, false, isSelected));
             });
         }
-    
-        // Update set primary button
-        function updateSetPrimaryButton(rowId) {
-            const select = document.querySelector(`select[data-supplier-id="${rowId}"]`);
-            const costInput = document.querySelector(`#supplier-${rowId} .unit-cost-input`);
-            const primaryBtn = document.querySelector(`#supplier-${rowId} .set-primary-btn`);
-            primaryBtn.disabled = !(select.value && costInput.value);
-        }
-    
         // Set primary from row
         function setPrimaryFromRow(rowId) {
             const select = document.querySelector(`select[data-supplier-id="${rowId}"]`);
-            const costInput = document.querySelector(`#supplier-${rowId} .unit-cost-input`);
-            if (select.value && costInput.value) {
-                setPrimarySupplier(select.value, select.options[select.selectedIndex].text, costInput.value);
+            if (select.value) {
+                setPrimarySupplier(select.value, select.options[select.selectedIndex].text);
             }
         }
     
@@ -473,7 +434,7 @@
             // Load existing alternate suppliers
             @foreach($product->suppliers as $supplier)
                 @if($supplier->id != $product->default_supplier_id)
-                    addSupplierRow({{ $supplier->id }}, {{ $supplier->pivot->default_unit_cost }}, false);
+                    addSupplierRow({{ $supplier->id }}, false);
                 @endif
             @endforeach
     

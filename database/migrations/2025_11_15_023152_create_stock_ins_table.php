@@ -11,24 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('stock_ins', function (Blueprint $table) {
-            $table->id();
+            Schema::create('stock_ins', function (Blueprint $table) {
+                $table->id();
 
-            $table->dateTime('stock_in_date');
-            $table->string('reference_no', 100)->nullable();
-            
-            $table->unsignedBigInteger('received_by_user_id');
-            $table->foreign('received_by_user_id')->references('id')->on('users')->onDelete('restrict');
-    
-            // Add supplier_id if missing
-            $table->unsignedBigInteger('supplier_id');
-            $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('restrict');
-    
-            $table->string('status')->default('completed');
-            
-            $table->timestamps();
-        });
-    }
+                $table->dateTime('stock_in_date');
+                $table->string('reference_no', 100)->nullable();
+                
+                $table->unsignedBigInteger('received_by_user_id');
+                $table->foreign('received_by_user_id')->references('id')->on('users')->onDelete('restrict');
+        
+                $table->string('status')->default('completed');
+                
+                $table->timestamps();
+            });
+        }
 
     /**
      * Reverse the migrations.

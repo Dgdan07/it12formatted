@@ -23,20 +23,20 @@ class StockInController extends Controller
                     'l_name' => 'User'
                 ]);
             },
-            'supplier',
-            'items.product'
+            'items.product',
+            'items.supplier'
         ]);
 
         // Search
         if ($request->filled('search')) {
             $query->where(function($q) use ($request) {
                 $q->where('reference_no', 'like', '%' . $request->search . '%')
-                  ->orWhereHas('supplier', function($q) use ($request) {
-                      $q->where('supplier_name', 'like', '%' . $request->search . '%');
-                  })
-                  ->orWhereHas('items.product', function($q) use ($request) {
-                      $q->where('name', 'like', '%' . $request->search . '%');
-                  });
+                ->orWhereHas('items.product', function($q) use ($request) {
+                    $q->where('name', 'like', '%' . $request->search . '%');
+                })
+                ->orWhereHas('items.supplier', function($q) use ($request) { 
+                    $q->where('supplier_name', 'like', '%' . $request->search . '%');
+                });
             });
         }
 
@@ -86,6 +86,7 @@ class StockInController extends Controller
                 'panels.*.items.*.product_id' => 'required|exists:products,id',
                 'panels.*.items.*.quantity_received' => 'required|integer|min:1',
                 'panels.*.items.*.actual_unit_cost' => 'required|numeric|min:0',
+                'panels.*.items.*.retail_price' => 'required|numeric|min:0',
             ]);
     
             Log::info('Validated data:', $validated);
@@ -118,7 +119,16 @@ class StockInController extends Controller
                     // Update product stock
                     $product = Product::find($itemData['product_id']);
                     $product->increment('quantity_in_stock', $itemData['quantity_received']);
-                    $product->update(['last_unit_cost' => $itemData['actual_unit_cost']]);
+                    $product->update(['latest_unit_cost' => $itemData['actual_unit_cost']]);
+
+                    $productPrice = \App\Models\ProductPrice::updateOrCreate(
+                        ['product_id' => $itemData['product_id']],
+                        [
+                            'retail_price' => $itemData['retail_price'],
+                            'stock_in_id' => $stockIn->id,
+                            'updated_by_user_id' => $panelData['received_by_user_id']
+                        ]
+                    );
                 }
             }
     
@@ -147,7 +157,7 @@ class StockInController extends Controller
      */
     public function show(StockIn $stockIn)
     {
-        $stockIn->load(['receivedBy', 'supplier', 'items.product']);
+        $stockIn->load(['receivedBy', 'items.supplier', 'items.product']);
         return response()->json($stockIn);
     }
 

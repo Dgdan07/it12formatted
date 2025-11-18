@@ -51,8 +51,6 @@
                             <input type="hidden" name="sort" value="{{ $sort }}">
                             <input type="hidden" name="direction" value="{{ $direction }}">
                             <input type="hidden" name="category_id" value="{{ request('category_id') }}">
-                            <input type="hidden" name="min_price" value="{{ request('min_price') }}">
-                            <input type="hidden" name="max_price" value="{{ request('max_price') }}">
                             <div class="input-group search-box w-100">
                                 <input type="text" class="form-control" name="search" placeholder="Search products..." value="{{ request('search') }}">
                                 <button class="btn btn-outline-secondary" type="submit">
@@ -86,27 +84,6 @@
                     </select>
                 </div>
 
-                <!-- Price Range -->
-                <div class="col-md-3">
-                    <form action="{{ route('products.index') }}" method="GET" class="d-flex gap-2 bg-light p-2 rounded">
-                        @if($showArchived)
-                            <input type="hidden" name="archived" value="true">
-                        @endif
-                        <input type="hidden" name="sort" value="{{ $sort }}">
-                        <input type="hidden" name="direction" value="{{ $direction }}">
-                        <input type="hidden" name="category_id" value="{{ request('category_id') }}">
-                        <input type="hidden" name="search" value="{{ request('search') }}">
-                        
-                        <input type="number" class="form-control" name="min_price" placeholder="Min price" 
-                            value="{{ request('min_price') }}" step="0.01" min="0">
-                        <input type="number" class="form-control" name="max_price" placeholder="Max price" 
-                            value="{{ request('max_price') }}" step="0.01" min="0">
-                        <button class="btn btn-outline-secondary" type="submit">
-                            <i class="bi bi-filter"></i>
-                        </button>
-                    </form>
-                </div>
-
                 <!-- Archive Toggle & Sort -->
                 <div class="col-md-3">
                     <div class="d-flex gap-2 justify-content-between">
@@ -122,10 +99,6 @@
                                 <li><a class="dropdown-item {{ $sort == 'name' ? 'active' : '' }}" 
                                     href="{{ request()->fullUrlWithQuery(['sort' => 'name', 'direction' => $sort == 'name' && $direction == 'asc' ? 'desc' : 'asc']) }}">
                                     Name @if($sort == 'name') <i class="bi bi-arrow-{{ $direction == 'asc' ? 'up' : 'down' }} float-end"></i> @endif
-                                </a></li>
-                                <li><a class="dropdown-item {{ $sort == 'price' ? 'active' : '' }}" 
-                                    href="{{ request()->fullUrlWithQuery(['sort' => 'price', 'direction' => $sort == 'price' && $direction == 'asc' ? 'desc' : 'asc']) }}">
-                                    Price @if($sort == 'price') <i class="bi bi-arrow-{{ $direction == 'asc' ? 'up' : 'down' }} float-end"></i> @endif
                                 </a></li>
                                 <li><a class="dropdown-item {{ $sort == 'quantity_in_stock' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['sort' => 'quantity_in_stock', 'direction' => $sort == 'quantity_in_stock' && $direction == 'asc' ? 'desc' : 'asc']) }}">
                                     Stock @if($sort == 'quantity_in_stock') <i class="bi bi-arrow-{{ $direction == 'asc' ? 'up' : 'down' }} float-end"></i> @endif
@@ -161,24 +134,10 @@
                     @if(request('category_id'))
                         in {{ $categories->where('id', request('category_id'))->first()->name ?? 'Unknown' }} category
                     @endif
-                    @if(request('min_price') || request('max_price'))
-                        (Price: 
-                        @if(request('min_price'))₱{{ number_format(request('min_price'), 2) }}@endif
-                        @if(request('min_price') && request('max_price')) - @endif
-                        @if(request('max_price'))₱{{ number_format(request('max_price'), 2) }}@endif
-                        )
-                    @endif
                 @else
                     Displaying {{ $products->count() }} of {{ $products->total() }} {{ $showArchived ? 'archived' : 'active' }} products
                     @if(request('category_id'))
                         in {{ $categories->where('id', request('category_id'))->first()->name ?? 'Unknown' }} category
-                    @endif
-                    @if(request('min_price') || request('max_price'))
-                        (Price range: 
-                        @if(request('min_price'))₱{{ number_format(request('min_price'), 2) }}@endif
-                        @if(request('min_price') && request('max_price')) - @endif
-                        @if(request('max_price'))₱{{ number_format(request('max_price'), 2) }}@endif
-                        )
                     @endif
                 @endif
             </div>
@@ -189,7 +148,6 @@
                         <th>Image</th>
                         <th>Product Name</th>
                         <th>Category</th>
-                        <th>Price</th>
                         <th>Stock</th>
                         <th>Suppliers</th>
                         <th>Last Updated</th>
@@ -210,7 +168,6 @@
                             @endif
                         </td>
                         <td>{{ $product->category->name }}</td>
-                        <td>₱{{ number_format($product->price, 2) }}</td>
                         <td>
                             <span class="text-{{ $product->quantity_in_stock == 0 ? 'danger' : ($product->quantity_in_stock <= $product->reorder_level ? 'danger' : 'success') }} fw-semibold">
                                 {{ $product->quantity_in_stock }}
@@ -323,13 +280,6 @@
                                 </div>
                                 
                                 <div class="col-5">
-                                    <small class="text-muted">Price:</small>
-                                </div>
-                                <div class="col-7">
-                                    <span class="fw-semibold" id="viewProductPrice"></span>
-                                </div>
-                                
-                                <div class="col-5">
                                     <small class="text-muted">Stock:</small>
                                 </div>
                                 <div class="col-7">
@@ -341,13 +291,6 @@
                                 </div>
                                 <div class="col-7">
                                     <span class="fw-semibold" id="viewProductReorder"></span>
-                                </div>
-                                
-                                <div class="col-5">
-                                    <small class="text-muted">Last Unit Cost:</small>
-                                </div>
-                                <div class="col-7">
-                                    <span class="fw-semibold" id="viewProductCost"></span>
                                 </div>
                                 
                                 <div class="col-5">
@@ -479,10 +422,8 @@
                         document.getElementById('viewProductDescription').textContent = product.description || 'N/A';
                         document.getElementById('viewProductCategory').textContent = product.category.name;
                         document.getElementById('viewProductBarcode').textContent = product.manufacturer_barcode || 'N/A';
-                        document.getElementById('viewProductPrice').textContent = '₱' + parseFloat(product.price).toFixed(2);
                         document.getElementById('viewProductStock').textContent = product.quantity_in_stock;
                         document.getElementById('viewProductReorder').textContent = product.reorder_level;
-                        document.getElementById('viewProductCost').textContent = '₱' + parseFloat(product.last_unit_cost).toFixed(2);
                         
                         const imageElement = document.getElementById('viewProductImage');
                         if (product.image_url) {
@@ -505,7 +446,7 @@
                             // Find primary supplier
                             const primary = product.suppliers.find(supplier => supplier.id === product.default_supplier_id);
                             if (primary) {
-                                primarySupplier.textContent = `${primary.supplier_name} (₱${parseFloat(primary.pivot.default_unit_cost).toFixed(2)})`;
+                                primarySupplier.textContent = `${primary.supplier_name}`;
                                 primarySupplier.innerHTML;
                             } else {
                                 primarySupplier.textContent = 'Not set';
@@ -522,7 +463,7 @@
                                                 <strong>${supplier.supplier_name}</strong>
                                                 ${isPrimary ? '<span>(Primary)</span>' : ''}
                                                 <br>
-                                                <small class="text-muted">Unit Cost: ₱${parseFloat(supplier.pivot.default_unit_cost).toFixed(2)}</small>
+                                                <small class="text-muted">Supplier</small>
                                             </div>
                                             <div class="text-end">
                                                 ${supplier.contactNO ? `<small class="text-muted d-block">${supplier.contactNO}</small>` : ''}

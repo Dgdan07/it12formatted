@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\POSController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductPriceController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StockInController;
 use App\Http\Controllers\SupplierController;
@@ -69,9 +70,13 @@ Route::middleware(['auth.simple'])->group(function () {
         });
 
         Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
-Route::get('/sales/{id}', [SaleController::class, 'show'])->name('sales.show');
-Route::get('/sales/{id}/receipt', [SaleController::class, 'receipt'])->name('sales.receipt');
-Route::get('/sales/{id}/details', [SaleController::class, 'details'])->name('sales.details');
+        Route::get('/sales/{id}', [SaleController::class, 'show'])->name('sales.show');
+        Route::get('/sales/{id}/receipt', [SaleController::class, 'receipt'])->name('sales.receipt');
+        Route::get('/sales/{id}/details', [SaleController::class, 'details'])->name('sales.details');
+
+        Route::get('/product-prices', [ProductPriceController::class, 'index'])->name('product-prices.index');
+        Route::post('/product-prices/update', [ProductPriceController::class, 'update'])->name('product-prices.update');
+        Route::get('/api/product-prices/{product}/history', [ProductPriceController::class, 'priceHistory']);
     });
 
     // Both admin and employee can access these
