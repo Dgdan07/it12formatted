@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Add New Product - ATIN Admin')
+@section('title', 'New Product - ATIN Admin')
 @push('styles')
 <link href="{{ asset('css/page-style.css') }}" rel="stylesheet">
 <style>
@@ -32,7 +32,7 @@
                 <a href="{{ route('products.index') }}" class="text-decoration-none text-dark">
                     <b class="underline">Products</b>
                 </a> 
-                > Add New Product
+                > New Product
             </h2>
             <a href="{{ route('products.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i>
@@ -48,73 +48,89 @@
                 @csrf
                 
                 <div class="row">
-                    <!-- Basic Information -->
+                    <!-- Left Column (Basic Info) -->
                     <div class="col-md-6">
                         <h5 class="mb-3"><i class="bi bi-info-circle me-2"></i>Basic Information</h5>
-                        
+                
                         <div class="mb-3">
                             <label for="name" class="form-label">Product Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="name" name="name" value="{{ old('name') }}" required maxlength="150">
+                            <input type="text" class="form-control" id="name" name="name" placeholder="Enter product name..."
+                                   value="{{ old('name') }}" required maxlength="150">
+                            <div class="form-text">Max 150 characters</div>
                         </div>
-
+                
                         <div class="mb-3">
                             <label for="description" class="form-label">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="3" maxlength="500">{{ old('description') }}</textarea>
+                            <textarea class="form-control" id="description" name="description" placeholder="Enter product description..."
+                                      rows="4" maxlength="500">{{ old('description') }}</textarea>
+                            <div class="form-text">Max 500 characters</div>
                         </div>
-
+                    </div>
+                
+                    <!-- Right Column (Product Details + Inventory) -->
+                    <div class="col-md-6">
+                        <h5 class="mb-3"><i class="bi bi-box me-2"></i>Product Details & Inventory</h5>
+                
+                        <!-- Category -->
                         <div class="mb-3">
                             <label for="category_id" class="form-label">Category <span class="text-danger">*</span></label>
                             <select class="form-select" id="category_id" name="category_id" required>
                                 <option value="">Select Category</option>
                                 @foreach($categories as $category)
-                                    <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                    <option value="{{ $category->id }}" 
+                                        {{ old('category_id') == $category->id ? 'selected' : '' }}>
                                         {{ $category->name }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
-
+                
                         <!-- SKU -->
                         <div class="mb-3">
-                            <label for="sku_display" class="form-label">SKU <span class="text-danger">*</span></label>
+                            <label for="sku_suffix" class="form-label">SKU <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text" id="sku_prefix_display">-</span>
                                 <span class="input-group-text">-</span>
-                                <input type="text" class="form-control" id="sku_suffix" name="sku_suffix" maxlength="5"pattern="[0-9]*"
-                                       inputmode="numeric"required placeholder="00123">
+                                <input type="text" class="form-control" id="sku_suffix" name="sku_suffix"
+                                       maxlength="5" pattern="[0-9]*" inputmode="numeric"
+                                       required placeholder="00123">
                                 <button type="button" class="btn btn-outline-secondary" id="suggest_sku">
                                     <i class="bi bi-magic"></i> Suggest
                                 </button>
                             </div>
                             <div class="form-text">
-                                Format: <strong><span id="sku_format_display">CAT-00123</span></strong>. 
-                                Prefix is auto-generated from category. Suffix must be 1-5 digits and unique per category.
+                                Format: <strong><span id="sku_format_display">CAT-00123</span></strong>.
                             </div>
                         </div>
-
+                
+                        <!-- Manufacturer Barcode -->
                         <div class="mb-3">
                             <label for="manufacturer_barcode" class="form-label">Manufacturer Barcode</label>
-                            <input type="text" class="form-control" id="manufacturer_barcode" name="manufacturer_barcode" value="{{ old('manufacturer_barcode') }}" maxlength="20" 
-                                placeholder="Scan or type the barcode number here..." inputmode="numeric" pattern="[0-9]{12,20}"
-                                title="Scan the physical product's UPC or EAN code, or manually enter the 12- to 20-digit number."
-                                oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                            <input type="text" class="form-control" id="manufacturer_barcode" 
+                                   name="manufacturer_barcode" value="{{ old('manufacturer_barcode') }}"
+                                   maxlength="20" inputmode="numeric" pattern="[0-9]{12,20}"
+                                   placeholder="Scan or type barcode..." oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                         </div>
-
+                
+                        <!-- Image -->
                         <div class="mb-3">
                             <label for="image" class="form-label">Product Image</label>
-                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
-                            <div class="form-text">Accepted formats: JPEG, PNG, JPG, GIF. Max size: 2MB</div>
-                            <div id="imagePreview" class="mt-2"></div>
+                            <input type="file" class="form-control" id="image" name="image" 
+                                   accept=".jpg,.jpeg,.png,.gif,.webp">
+                            <div class="form-text">JPEG, PNG, JPG, GIF, WEBP — Max 2MB</div>
+                            <div id="imagePreview" class="mt-2 position-relative" style="display: inline-block;"></div>
+                            <div id="imageError" class="text-danger small mt-1"></div>
                         </div>
-                    </div>
-
-                    <!-- Inventory -->
-                    <div class="col-md-6">
-                        <h5 class="mb-3"><i class="bi bi-box me-2"></i>Inventory</h5>
+                
+                        <!-- Reorder Level -->
                         <div class="mb-3">
                             <label for="reorder_level" class="form-label">Reorder Level <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="reorder_level" name="reorder_level" value="{{ old('reorder_level', 10) }}" min="0" max="99999" required>
-                            <div class="form-text">Alert when stock falls below this level</div>
+                            <input type="number" class="form-control" id="reorder_level" 
+                                   name="reorder_level" value="{{ old('reorder_level', 10) }}"
+                                   min="0" max="99999" required>
+                            <div class="form-text">
+                                Alert when stock falls below this level.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -156,11 +172,6 @@
                             <button type="button" class="btn btn-outline-primary" id="add-supplier">
                                 <i class="bi bi-plus-circle me-1"></i>
                                 Add Alternate Supplier
-                            </button>
-                            
-                            <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#addSupplierModal">
-                                <i class="bi bi-building me-1"></i>
-                                Create New Supplier
                             </button>
                         </div>
                     </div>
@@ -218,9 +229,9 @@
             </div>
         </div>
     </div>
+@endsection
 
-    @push('scripts')
-    @push('scripts')
+@push('scripts')
 <script>
     // PASS SUPPLIERS FROM LARAVEL TO JS (CRITICAL!)
     const ALL_SUPPLIERS = @json($suppliers->map(function($s) {
@@ -238,26 +249,106 @@
             description: document.getElementById('description').value,
             category_id: document.getElementById('category_id').value,
             manufacturer_barcode: document.getElementById('manufacturer_barcode').value,
-            price: document.getElementById('price').value,
             reorder_level: document.getElementById('reorder_level').value,
             default_supplier_id: document.getElementById('default_supplier_id').value,
-            last_unit_cost: document.getElementById('initial_unit_cost').value,
             alternate_suppliers: []
         };
 
         document.querySelectorAll('[id^="supplier-"]').forEach(div => {
             const select = div.querySelector('select');
-            const costInput = div.querySelector('input[type="number"]');
-            if (select && costInput && (select.value || costInput.value)) {
+            if (select && select.value) {
                 formData.alternate_suppliers.push({
-                    id: select.value,
-                    default_unit_cost: costInput.value
+                    id: select.value
                 });
             }
         });
 
         localStorage.setItem('productFormData', JSON.stringify(formData));
     }
+
+    // Image validation with strict 2MB limit
+    document.getElementById('image').addEventListener('change', function(e) {
+        const file = this.files[0];
+        const errorDiv = document.getElementById('imageError');
+        const preview = document.getElementById('imagePreview');
+        
+        // Clear previous errors and preview
+        errorDiv.textContent = '';
+        preview.innerHTML = '';
+        
+        if (!file) return;
+        
+        // Strict file type validation
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            errorDiv.textContent = 'Invalid file type. Please upload JPEG, PNG, JPG, GIF, or WEBP only.';
+            this.value = ''; // Clear the file input
+            return;
+        }
+        
+        // Strict 2MB size validation
+        const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+        if (file.size > maxSize) {
+            errorDiv.textContent = `File size (${(file.size / (1024 * 1024)).toFixed(2)}MB) exceeds 2MB limit. Please choose a smaller file.`;
+            this.value = ''; // Clear the file input
+            return;
+        }
+        
+        // If validation passes, show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'image-preview';
+            
+            const clearBtn = document.createElement('button');
+            clearBtn.type = 'button';
+            clearBtn.className = 'btn btn-danger btn-sm position-absolute';
+            clearBtn.style.top = '5px';
+            clearBtn.style.right = '5px';
+            clearBtn.innerHTML = '<i class="bi bi-x"></i>';
+            clearBtn.onclick = clearImage;
+            
+            preview.appendChild(img);
+            preview.appendChild(clearBtn);
+        };
+        reader.readAsDataURL(file);
+    });
+
+    function clearImage() {
+            document.getElementById('image').value = '';
+            document.getElementById('imagePreview').innerHTML = '';
+            document.getElementById('imageError').textContent = '';
+            saveFormData();
+        }
+
+    // Also prevent form submission if there's a large file
+    document.getElementById('productForm').addEventListener('submit', function(e) {
+        const imageInput = document.getElementById('image');
+        const file = imageInput.files[0];
+        const errorDiv = document.getElementById('imageError');
+        
+        if (file) {
+            // Re-validate on submit for safety
+            const maxSize = 2 * 1024 * 1024;
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            
+            if (!validTypes.includes(file.type)) {
+                e.preventDefault();
+                errorDiv.textContent = 'Invalid file type. Please upload a valid image.';
+                imageInput.focus();
+                return;
+            }
+            
+            if (file.size > maxSize) {
+                e.preventDefault();
+                errorDiv.textContent = `File too large. Maximum size is 2MB.`;
+                imageInput.value = '';
+                imageInput.focus();
+                return;
+            }
+        }
+    });
 
     // Load form data
     function loadFormData() {
@@ -269,13 +360,15 @@
         document.getElementById('description').value = data.description || '';
         document.getElementById('category_id').value = data.category_id || '';
         document.getElementById('manufacturer_barcode').value = data.manufacturer_barcode || '';
-        document.getElementById('price').value = data.price || '';
         document.getElementById('reorder_level').value = data.reorder_level || '';
         document.getElementById('default_supplier_id').value = data.default_supplier_id || '';
-        document.getElementById('initial_unit_cost').value = data.last_unit_cost || '';
+
+        document.getElementById('image').value = '';
+        document.getElementById('imagePreview').innerHTML = '';
+        document.getElementById('imageError').textContent = '';
 
         if (data.alternate_suppliers?.length > 0) {
-            data.alternate_suppliers.forEach(s => addSupplierRow(s.id, s.default_unit_cost));
+            data.alternate_suppliers.forEach(s => addSupplierRow(s.id));
         }
     }
 
@@ -284,7 +377,7 @@
     }
 
     // Add alternate supplier row
-    function addSupplierRow(supplierId = '', unitCost = '') {
+    function addSupplierRow(supplierId = '') {
         supplierCount++;
         const container = document.getElementById('suppliers-container');
 
@@ -293,7 +386,7 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label class="form-label">Supplier <span class="text-danger">*</span></label>
+                            <label class="form-label">Supplier</label>
                             <div class="input-group">
                                 <select class="form-select supplier-select" name="suppliers[${supplierCount}][id]" data-supplier-id="${supplierCount}">
                                 </select>
@@ -302,16 +395,6 @@
                                         data-context="alternate-${supplierCount}">
                                     <i class="bi bi-plus-lg"></i>
                                 </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label class="form-label">Unit Cost <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text">₱</span>
-                                <input type="number" class="form-control" name="suppliers[${supplierCount}][default_unit_cost]"
-                                       value="${unitCost}" step="0.01" min="0" max="9999999.99">
                             </div>
                         </div>
                     </div>
@@ -349,22 +432,6 @@
         document.getElementById(`supplier-${id}`)?.remove();
         saveFormData();
     }
-
-    // Image preview
-    document.getElementById('image').addEventListener('change', function(e) {
-        const preview = document.getElementById('imagePreview');
-        preview.innerHTML = '';
-        if (this.files?.[0]) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.className = 'image-preview';
-                preview.appendChild(img);
-            };
-            reader.readAsDataURL(this.files[0]);
-        }
-    });
 
     // Add supplier button
     document.getElementById('add-supplier').addEventListener('click', () => addSupplierRow());
@@ -588,5 +655,3 @@
     });
 </script>
 @endpush
-    @endpush
-@endsection

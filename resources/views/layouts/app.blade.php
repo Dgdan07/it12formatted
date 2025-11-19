@@ -8,6 +8,9 @@
     <!-- Bootstrap CSS -->
     <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ asset('css/bootstrap-icons.css') }}" rel="stylesheet">
+
+    <!-- Select 2 CSS -->
+    <link href="{{ asset('css/vendor/select2.min.css') }}" rel="stylesheet">
     
     <style>
  
@@ -193,6 +196,10 @@
 
     <!-- Bootstrap JS -->
     <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+
+    <!-- Select 2 JS -->
+    <script src="{{ asset('js/vendor/jquery.min.js') }}"></script>
+    <script src="{{ asset('js/vendor/select2.min.js') }}"></script>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {

@@ -51,10 +51,16 @@ class Product extends Model
     {
         return $this->hasMany(ProductPrice::class)->orderBy('created_at', 'desc');
     }
+
+    public function latestProductPrice()
+{
+    return $this->hasOne(ProductPrice::class)
+                ->latest('created_at'); // get the most recent price
+}
   
-    public function getCurrentPriceAttribute()
+    public function getPriceAttribute()
     {
-        return $this->productPrice ? $this->productPrice->retail_price : null;
+        return $this->latestProductPrice ? $this->latestProductPrice->retail_price : 0;
     }
 
     public function defaultSupplier()
@@ -99,7 +105,7 @@ class Product extends Model
     public function getImageUrlAttribute()
     {
         if ($this->image_path) {
-            return asset('storage/' . $this->image_path);
+            return asset($this->image_path);
         }
         return asset('images/no-image.jpg'); // Default no image
     }

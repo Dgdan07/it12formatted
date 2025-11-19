@@ -62,7 +62,7 @@ class StockInController extends Controller
     public function create()
     {
         $suppliers = Supplier::active()->get();
-        $products = Product::active()->get();
+        $products = Product::active()->with('suppliers')->get(); 
         
         return view('stock-in.create', compact('suppliers', 'products'));
     }

@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('product_id')
-                ->unique()
                 ->constrained('products') // Ensures it links to the products table
                 ->onDelete('cascade'); // If the product is deleted, its price record is too.
             

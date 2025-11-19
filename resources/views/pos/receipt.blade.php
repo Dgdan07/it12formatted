@@ -45,6 +45,14 @@
         .text-center {
             text-align: center;
         }
+        .amount-section {
+            margin: 10px 0;
+        }
+        .amount-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+        }
         .total-section {
             margin-top: 15px;
             border-top: 2px solid #000;
@@ -119,7 +127,28 @@
         $total = $sale->items->sum(function($item) {
             return $item->quantity_sold * $item->unit_price;
         });
+        
+        // VAT Reverse Calculation (12% VAT)
+        $vatRate = 0.12;
+        $vatableSales = $total / (1 + $vatRate);
+        $vatAmount = $total - $vatableSales;
     @endphp
+    
+    <!-- Amount Breakdown -->
+    <div class="amount-section">
+        <div class="amount-row">
+            <span>AMOUNT DUE:</span>
+            <span>₱{{ number_format($total, 2) }}</span>
+        </div>
+        <div class="amount-row">
+            <span>VAT SALES:</span>
+            <span>₱{{ number_format($vatableSales, 2) }}</span>
+        </div>
+        <div class="amount-row">
+            <span>VAT 12.00%:</span>
+            <span>₱{{ number_format($vatAmount, 2) }}</span>
+        </div>
+    </div>
     
     <div class="total-section text-right">
         GRAND TOTAL: ₱{{ number_format($total, 2) }}
@@ -153,6 +182,12 @@
     <div class="footer">
         Thank You For Shopping With Us!<br>
         Please Come Again.
+    </div>
+
+    <!-- Return/Exchange Policy -->
+    <div class="return-policy">
+        Keep this invoice for item return/exchange.<br>
+        Return/exchange is acceptable within 7 days from purchase date.
     </div>
 </body>
 </html>

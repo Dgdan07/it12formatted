@@ -92,6 +92,7 @@ Route::middleware(['auth.simple'])->group(function () {
         Route::get('/sale-items/{saleId}', [POSController::class, 'getSaleItems']);
         Route::post('/process-payment', [POSController::class, 'processPayment']);
         Route::get('/receipt/{sale}/pdf', [POSController::class, 'downloadReceiptPDF']);
+        Route::post('/complete-sale', [POSController::class, 'completeSale'])->name('pos.completeSale');
         
         });
 

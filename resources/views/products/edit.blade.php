@@ -59,20 +59,34 @@
                 @method('PUT')
                 
                 <div class="row">
-                    <!-- Basic Information -->
+                    <!-- Left Column: Basic Information -->
                     <div class="col-md-6">
                         <h5 class="mb-3"><i class="bi bi-info-circle me-2"></i>Basic Information</h5>
-                        
+                
+                        <!-- Product Name -->
                         <div class="mb-3">
                             <label for="name" class="form-label">Product Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="name" name="name" value="{{ old('name', $product->name) }}" required maxlength="150">
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   placeholder="e.g. Lenovo Wireless Mouse M240"
+                                   value="{{ old('name', $product->name) }}" required maxlength="150">
+                            <div class="form-text">Max 150 characters</div>
                         </div>
-
+                
+                        <!-- Description -->
                         <div class="mb-3">
                             <label for="description" class="form-label">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="3" maxlength="500">{{ old('description', $product->description) }}</textarea>
+                            <textarea class="form-control" id="description" name="description" 
+                                      placeholder="Optional – short details like color, size, or features"
+                                      rows="4" maxlength="500">{{ old('description', $product->description) }}</textarea>
+                            <div class="form-text">Max 500 characters</div>
                         </div>
-
+                    </div>
+                
+                    <!-- Right Column: Product Details + Inventory -->
+                    <div class="col-md-6">
+                        <h5 class="mb-3"><i class="bi bi-box me-2"></i>Product Details & Inventory</h5>
+                
+                        <!-- Category -->
                         <div class="mb-3">
                             <label for="category_id" class="form-label">Category <span class="text-danger">*</span></label>
                             <select class="form-select" id="category_id" name="category_id" required>
@@ -84,52 +98,55 @@
                                 @endforeach
                             </select>
                         </div>
-
+                
+                        <!-- SKU (Readonly) -->
                         <div class="mb-3">
                             <label class="form-label">SKU</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   value="{{ $product->sku }}" 
-                                   readonly
+                            <input type="text" class="form-control" value="{{ $product->sku }}" readonly
                                    style="background-color: #e9ecef;">
                             <div class="form-text">SKU cannot be changed after product creation.</div>
                         </div>
-
+                
+                        <!-- Manufacturer Barcode -->
                         <div class="mb-3">
                             <label for="manufacturer_barcode" class="form-label">Manufacturer Barcode</label>
-                            <input type="text" class="form-control" id="manufacturer_barcode" name="manufacturer_barcode" value="{{ old('manufacturer_barcode', $product->manufacturer_barcode) }}" maxlength="20" 
-                                placeholder="Scan or type the barcode number here..." inputmode="numeric" pattern="[0-9]{12,20}"
-                                title="Scan the physical product's UPC or EAN code, or manually enter the 12- to 20-digit number."
-                                oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                            <input type="text" class="form-control" id="manufacturer_barcode" name="manufacturer_barcode" 
+                                   value="{{ old('manufacturer_barcode', $product->manufacturer_barcode) }}" 
+                                   maxlength="20" inputmode="numeric" pattern="[0-9]{12,20}"
+                                   placeholder="Scan or type barcode..." 
+                                   oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                         </div>
+                        <label for="image" class="form-label">Product Image</label>
 
+                        <!-- Product Image -->
                         <div class="mb-3">
-                            <label for="image" class="form-label">Product Image</label>
                             @if($product->image_path)
-                                <div class="mb-2">
-                                    <img src="{{ $product->image_url }}" alt="Current Image" class="image-preview">
+                                <div class="position-relative d-inline-block">
+                                    <img src="{{ asset($product->image_path) }}" alt="Current Image" class="image-preview">
                                 </div>
                             @endif
-                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
-                            <div class="form-text">Accepted formats: JPEG, PNG, JPG, GIF. Max size: 2MB</div>
-                            <div id="imagePreview" class="mt-2"></div>
+                            <input type="file" class="form-control mt-2" id="image" name="image" accept=".jpg,.jpeg,.png,.gif,.webp">
+                            <div class="form-text">JPEG, PNG, JPG, GIF, WEBP — Max 2MB</div>
+                            <div id="imagePreview" class="mt-2 position-relative d-inline-block"></div>
+                            <div id="imageError" class="text-danger small mt-1"></div>
                         </div>
-                    </div>
-
-                    <!-- Inventory -->
-                    <div class="col-md-6">
-                        <h5 class="mb-3"><i class="bi bi-box me-2"></i>Inventory</h5>
                         
+                        <input type="hidden" id="delete_image" name="delete_image" value="0">
+                
+                        <!-- Reorder Level -->
                         <div class="mb-3">
                             <label for="reorder_level" class="form-label">Reorder Level <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="reorder_level" name="reorder_level" value="{{ old('reorder_level', $product->reorder_level) }}" min="0" max="99999" required>
-                            <div class="form-text">Alert when stock falls below this level</div>
+                            <input type="number" class="form-control" id="reorder_level" name="reorder_level" 
+                                   value="{{ old('reorder_level', $product->reorder_level) }}" min="0" max="99999" required>
+                            <div class="form-text">Alert when stock falls below this level.</div>
                         </div>
-
-                        <!-- Hidden field for primary supplier -->
-                        <input type="hidden" id="default_supplier_id" name="default_supplier_id" value="{{ old('default_supplier_id', $product->default_supplier_id) }}">
+                
+                        <!-- Hidden Primary Supplier (for edit) -->
+                        <input type="hidden" id="default_supplier_id" name="default_supplier_id" 
+                               value="{{ old('default_supplier_id', $product->default_supplier_id) }}">
                     </div>
                 </div>
+                
 
                 <!-- Suppliers Section -->
                 <div class="row mt-4">
@@ -228,13 +245,14 @@
     @push('scripts')
     <script>
         const ALL_SUPPLIERS = @json($suppliers->map(function($s) {
-        return ['id' => $s->id, 'supplier_name' => $s->supplier_name];
-    }));
+            return ['id' => $s->id, 'supplier_name' => $s->supplier_name];
+        }));
+    
         let sharedSupplierOptions = [];
         let supplierCount = 0;
         let currentSupplierModalContext = null;
     
-        // Set primary supplier
+        // Set primary supplier - KEEP THIS FUNCTION
         function setPrimarySupplier(supplierId, supplierName) {
             document.getElementById('default_supplier_id').value = supplierId;
             document.getElementById('primarySupplierName').textContent = supplierName;
@@ -253,24 +271,40 @@
                 }
             });
         }
+
+        function clearImage() {
+            document.getElementById('image').value = '';
+            document.getElementById('imagePreview').innerHTML = '';
+            document.getElementById('imageError').textContent = '';
+        }
     
         // Image preview
-        document.getElementById('image').addEventListener('change', function(e) {
-            const preview = document.getElementById('imagePreview');
-            preview.innerHTML = '';
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.className = 'image-preview';
-                    preview.appendChild(img);
-                };
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
+            document.getElementById('image').addEventListener('change', function(e) {
+                const preview = document.getElementById('imagePreview');
+                preview.innerHTML = '';
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'image-preview';
+                        
+                        const clearBtn = document.createElement('button');
+                        clearBtn.type = 'button';
+                        clearBtn.className = 'btn btn-danger btn-sm position-absolute';
+                        clearBtn.style.top = '5px';
+                        clearBtn.style.right = '5px';
+                        clearBtn.innerHTML = '<i class="bi bi-x"></i>';
+                        clearBtn.onclick = clearImage;
+                        
+                        preview.appendChild(img);
+                        preview.appendChild(clearBtn);
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }
+});
     
-        // Add supplier row
+        // Add supplier row 
         function addSupplierRow(supplierId = '', isPrimary = false) {
             supplierCount++;
             const container = document.getElementById('suppliers-container');
@@ -342,7 +376,8 @@
                 newSelect.add(new Option(opt.text, opt.value, false, isSelected));
             });
         }
-        // Set primary from row
+    
+        // Set primary from row - KEEP THIS
         function setPrimaryFromRow(rowId) {
             const select = document.querySelector(`select[data-supplier-id="${rowId}"]`);
             if (select.value) {
@@ -350,7 +385,26 @@
             }
         }
     
-        // Remove supplier
+        // Update set primary button - KEEP THIS
+        function updateSetPrimaryButton(rowId) {
+            const select = document.querySelector(`select[data-supplier-id="${rowId}"]`);
+            const btn = document.querySelector(`button[data-supplier-id="${rowId}"]`);
+            const currentPrimaryId = document.getElementById('default_supplier_id').value;
+            
+            if (select.value === currentPrimaryId) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-star-fill me-1"></i>Primary';
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-success');
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-star me-1"></i>Set Primary';
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-secondary');
+            }
+        }
+    
+        // Remove supplier - KEEP THIS
         function removeSupplier(id) {
             const currentPrimaryId = document.getElementById('default_supplier_id').value;
             const select = document.querySelector(`select[data-supplier-id="${id}"]`);
@@ -364,16 +418,15 @@
         // Add supplier button
         document.getElementById('add-supplier').addEventListener('click', () => addSupplierRow());
     
-        // Collect shared options from first dropdown
+        // Collect shared options
         function collectSharedSupplierOptions() {
-    // Use Laravel-passed data instead of DOM
-    sharedSupplierOptions = ALL_SUPPLIERS.map(s => ({
-        value: s.id,
-        text: s.supplier_name
-    }));
-}
+            sharedSupplierOptions = ALL_SUPPLIERS.map(s => ({
+                value: s.id,
+                text: s.supplier_name
+            }));
+        }
     
-        // Quick add supplier
+        // Quick add supplier - KEEP THIS
         document.getElementById('submitQuickSupplier').addEventListener('click', function() {
             const formData = new FormData(document.getElementById('quickSupplierForm'));
             fetch('{{ route("suppliers.store") }}', {
@@ -431,19 +484,37 @@
         // Page load: Initialize everything
         document.addEventListener('DOMContentLoaded', function() {
             collectSharedSupplierOptions();
+            
             // Load existing alternate suppliers
             @foreach($product->suppliers as $supplier)
                 @if($supplier->id != $product->default_supplier_id)
                     addSupplierRow({{ $supplier->id }}, false);
                 @endif
             @endforeach
+
+            const existingImage = document.querySelector('.image-preview');
+            if (existingImage) {
+                const clearBtn = document.createElement('button');
+                clearBtn.type = 'button';
+                clearBtn.className = 'btn btn-danger btn-sm position-absolute';
+                clearBtn.style.top = '5px';
+                clearBtn.style.right = '5px';
+                clearBtn.innerHTML = '<i class="bi bi-x"></i>';
+                clearBtn.onclick = function() {
+                    existingImage.remove();
+                    clearBtn.remove();
+                    document.getElementById('delete_image').value = '1';
+                };
+                
+                existingImage.parentElement.classList.add('position-relative');
+                existingImage.parentElement.appendChild(clearBtn);
+            }
     
             // Add empty row if none
             if (supplierCount === 0) {
                 addSupplierRow();
             }
-    
-            // Collect all supplier options from first dropdown
+            
     
             // Set primary supplier name
             const primarySupplierId = document.getElementById('default_supplier_id').value;
@@ -454,10 +525,8 @@
                     }
                 @endforeach
             }
-        });
     
-        // Prevent leading zeros in reorder level
-        document.addEventListener("DOMContentLoaded", function () {
+            // Prevent leading zeros in reorder level
             ["reorder_level"].forEach(id => {
                 const input = document.getElementById(id);
                 if (input) {

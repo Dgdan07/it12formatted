@@ -1,4 +1,4 @@
-    @extends('layouts.app')
+@extends('layouts.app')
     @section('title', 'POS - ATIN Admin')
     @push('styles')
     <style>
@@ -138,12 +138,9 @@
             
             <!-- Product Search -->
             <div class="mb-3">
-                <input type="text" 
-                    class="form-control search-input" 
-                    id="productSearch" 
-                    placeholder="Scan barcode or enter SKU..."
-                    autofocus>
-                <div id="searchError" class="text-danger mt-2" style="display: none;"></div>
+                <select id="productSearch" class="form-control search-input" style="width: 100%;" autofocus></select>
+<div id="searchError" class="text-danger mt-2" style="display: none;"></div>
+
             </div>
 
               <!-- Table Header (always visible) -->
@@ -253,6 +250,35 @@
     init() {
         this.setupEventListeners();
         this.startClock();
+        $('#productSearch').select2({
+        placeholder: "Scan barcode or enter product...",
+        minimumInputLength: 1,
+        ajax: {
+            url: '/pos/search-product',
+            type: 'POST',
+            dataType: 'json',
+            delay: 250,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            data: function (params) {
+                return { search_term: params.term };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.products.map(p => ({
+                        id: p.id,
+                        text: p.name
+                    }))
+                };
+            },
+            cache: true
+        }
+    });
+    $('#productSearch').on('select2:select', (e) => {
+    const selectedId = e.params.data.id;
+    this.addProductById(selectedId); // Step 4 method
+});
     }
 
     startClock() {
@@ -286,6 +312,41 @@
 
         document.getElementById('completeSale').addEventListener('click', () => this.processPayment());
     }
+    async addProductById(id) {
+    try {
+        const res = await fetch('/pos/get-product', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ product_id: id })
+        });
+
+        const data = await res.json();
+        if (!data.success) return alert(data.message);
+
+        const product = data.product;
+        const existingIndex = this.items.findIndex(item => item.product.id === product.id);
+        if (existingIndex !== -1) {
+            this.items[existingIndex].quantity_sold++;
+        } else {
+            this.items.push({
+                product: product,
+                quantity_sold: 1,
+                unit_price: parseFloat(product.latest_product_price?.retail_price || 0)
+            });
+        }
+
+        this.renderItems();
+        this.updateTotal();
+        $('#productSearch').val(null).trigger('change'); // reset select2
+    } catch (err) {
+        console.error(err);
+        alert('Error adding product');
+    }
+}
+
 
     async searchAndAddProduct() {
         const searchInput = document.getElementById('productSearch');

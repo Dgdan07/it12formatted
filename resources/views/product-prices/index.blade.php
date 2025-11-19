@@ -168,18 +168,18 @@
                             @endif
                         </td>
                         <td>
-                            @if($product->productPrice)
-                                <span class="fw-bold text-success">₱{{ number_format($product->productPrice->retail_price, 2) }}</span>
+                            @if($product->latestProductPrice)
+                                <span class="fw-bold text-success">₱{{ number_format($product->latestProductPrice->retail_price, 2) }}</span>
                             @else
                                 <span class="no-price">N/A</span>
                             @endif
                         </td>
                         <td>
-                            @if($product->productPrice)
-                                {{ $product->productPrice->updated_at->format('Y-m-d') }}
+                            @if($product->latestProductPrice)
+                                {{ $product->latestProductPrice->updated_at->format('Y-m-d') }}
                                 <br>
                                 <small class="text-muted">
-                                    by {{ $product->productPrice->updatedBy->full_name ?? 'System' }}
+                                    by {{ $product->latestProductPrice->updatedBy->full_name ?? 'System' }}
                                 </small>
                             @else
                                 <span class="no-price">Never</span>
@@ -226,7 +226,7 @@
     <div class="modal fade" id="editPriceModal" tabindex="-1" aria-labelledby="editPriceModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form id="editPriceForm" method="POST">
+                <form id="editPriceForm" method="POST" action="{{ route('product-prices.update') }}">
                     @csrf
                     <div class="modal-header">
                         <h5 class="modal-title" id="editPriceModalLabel">

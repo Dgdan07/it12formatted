@@ -75,13 +75,12 @@ class ProductController extends Controller
                 'name' => 'required|string|max:150',
                 'description' => 'nullable|string|max:500',
                 'category_id' => 'required|exists:categories,id',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
                 'manufacturer_barcode' => 'nullable|string|max:30|unique:products,manufacturer_barcode',
                 'reorder_level' => 'required|integer|min:0',
                 'default_supplier_id' => 'required|exists:suppliers,id',
                 'suppliers' => 'nullable|array',
                 'suppliers.*.id' => 'nullable|exists:suppliers,id', 
-                'suppliers.*.default_unit_cost' => 'nullable|numeric|min:0', 
             ]);
             
             $sku = Product::generateSku($request->category_id, $request->sku_suffix);
@@ -119,27 +118,23 @@ class ProductController extends Controller
                 'manufacturer_barcode' => $request->manufacturer_barcode,
                 'reorder_level' => $request->reorder_level,
                 'default_supplier_id' => $request->default_supplier_id,
+                'latest_unit_cost' => null, 
                 'is_active' => true,
             ]);
 
             // Attach the default supplier first (mandatory)
-            $product->suppliers()->attach($request->default_supplier_id, [
-                'default_unit_cost' => $request->last_unit_cost
-            ]);
+            $suppliersToAttach = [$request->default_supplier_id];   
 
             // Attach additional suppliers (optional)
             if ($request->suppliers) {
                 foreach ($request->suppliers as $supplierData) {
-                    if (!empty($supplierData['id']) && !empty($supplierData['default_unit_cost'])) {
-                        // Skip if it's the same as default supplier (already attached)
-                        if ($supplierData['id'] != $request->default_supplier_id) {
-                            $product->suppliers()->attach($supplierData['id'], [
-                                'default_unit_cost' => $supplierData['default_unit_cost']
-                            ]);
-                        }
+                    if (!empty($supplierData['id']) && $supplierData['id'] != $request->default_supplier_id) {
+                        $suppliersToAttach[] = $supplierData['id'];
                     }
                 }
             }
+
+            $product->suppliers()->attach($suppliersToAttach);
 
             return redirect()->route('products.index')->with('success', 'Product added successfully.');
             
@@ -178,13 +173,12 @@ class ProductController extends Controller
                 'name' => 'required|string|max:150',
                 'description' => 'nullable|string|max:500',
                 'category_id' => 'required|exists:categories,id',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
                 'manufacturer_barcode' => 'nullable|string|max:30|unique:products,manufacturer_barcode,' . $product->id,
                 'reorder_level' => 'required|integer|min:0',
                 'default_supplier_id' => 'required|exists:suppliers,id',
                 'suppliers' => 'nullable|array',
                 'suppliers.*.id' => 'nullable|exists:suppliers,id',
-                'suppliers.*.default_unit_cost' => 'nullable|numeric|min:0',
             ]);
 
             // Handle image upload
@@ -209,6 +203,14 @@ class ProductController extends Controller
                 $imagePath = 'images/products/' . $filename;
             }
 
+            if ($request->delete_image == '1') {
+                // Delete old image if exists
+                if ($imagePath && file_exists(public_path($imagePath))) {
+                    unlink(public_path($imagePath));
+                }
+                $imagePath = null;
+            }
+
             $product->update([
                 'name' => ucfirst($request->name),
                 'description' => $request->description,
@@ -220,19 +222,13 @@ class ProductController extends Controller
             ]);
 
             // Sync suppliers - start with default supplier
-            $suppliersData = [
-                $request->default_supplier_id => [
-                    'default_unit_cost' => $request->last_unit_cost
-                ]
-            ];
+            $suppliersData = [$request->default_supplier_id];
 
             // Add additional suppliers
             if ($request->suppliers) {
                 foreach ($request->suppliers as $supplierData) {
-                    if (!empty($supplierData['id']) && !empty($supplierData['default_unit_cost'])) {
-                        $suppliersData[$supplierData['id']] = [
-                            'default_unit_cost' => $supplierData['default_unit_cost']
-                        ];
+                    if (!empty($supplierData['id']) && $supplierData['id'] != $request->default_supplier_id) {
+                        $suppliersData[] = $supplierData['id'];
                     }
                 }
             }

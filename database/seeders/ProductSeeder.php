@@ -139,7 +139,7 @@ class ProductSeeder extends Seeder
             DB::table('stock_in_items')->insert([
                 'stock_in_id' => $stockInId,
                 'product_id' => $productId,
-                'supplier_id' => $default_supplier_id,
+                'supplier_id' => $default_supplier_id,  
                 'quantity_received' => $quantity,
                 'actual_unit_cost' => $unitCost,
                 'created_at' => $now,

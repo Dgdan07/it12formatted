@@ -13,8 +13,8 @@ class ProductPriceController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Product::with(['productPrice', 'productPrice.updatedBy', 'productPrice.stockIn'])
-            ->active();
+        $query = Product::with(['latestProductPrice', 'latestProductPrice.updatedBy', 'latestProductPrice.stockIn'])
+        ->active();
 
         // Search
         if ($request->filled('search')) {
@@ -96,17 +96,15 @@ class ProductPriceController extends Controller
             'product_id' => 'required|exists:products,id',
             'retail_price' => 'required|numeric|min:0'
         ]);
-
+    
         try {
-            ProductPrice::updateOrCreate(
-                ['product_id' => $request->product_id],
-                [
-                    'retail_price' => $request->retail_price,
-                    'updated_by_user_id' => session('user_id'), 
-                    'stock_in_id' => null // Manual price update, not from stock in
-                ]
-            );
-
+            ProductPrice::create([
+                'product_id' => $request->product_id,
+                'retail_price' => $request->retail_price,
+                'updated_by_user_id' => session('user_id'),
+                'stock_in_id' => null // Manual price update, not from stock in
+            ]);
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Price updated successfully'
